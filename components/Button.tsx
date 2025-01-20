@@ -2,6 +2,7 @@ import { Pressable, Text, Vibration } from "react-native";
 import { useRef } from "react";
 import { useColorScheme } from "nativewind";
 
+import { Colors } from "@/constants/Colors";
 
 function Button({ title, onPress }: { title: string; onPress: () => void }) {
 
@@ -13,8 +14,8 @@ function Button({ title, onPress }: { title: string; onPress: () => void }) {
     <Text
       style={{
         //if colorScheme == dark
-        backgroundColor: colorScheme === "dark" ? "rgb(50, 0, 200)" : "rgb(100, 150, 255)",
-        color: colorScheme === "dark" ? "white" : "black",
+        backgroundColor: Colors[colorScheme ?? "light"].tint,
+        color: Colors[colorScheme ?? "light"].text,
         margin: 10,
         borderRadius: 10,
         padding: 10,
