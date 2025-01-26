@@ -4,8 +4,9 @@ import { Platform } from "react-native";
 import { useColorScheme } from "nativewind";
 
 import { Colors } from "@/constants/Colors";
-import TabBarBackground from "@/components/TabBarBackground";
 import { HapticTab } from "@/components/HapticTab";
+
+
 
 export default function TabLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();

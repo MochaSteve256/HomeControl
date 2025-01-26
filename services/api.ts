@@ -1,35 +1,207 @@
 import { loadValue } from "@/services/storage";
-import Toast from "react-native-simple-toast";
+import Toast from 'react-native-toast-message';
 
-export async function wakePC(): Promise<void> {
+async function getAPIconfig(): Promise<{ API_BASE_URL: string; API_TOKEN: string } | null> {
   try {
     const API_BASE_URL = await loadValue("serverUrl");
     if (!API_BASE_URL) {
-      throw new Error("API base URL not found in storage");
+      console.error("API base URL not found in storage");
+      return null;
     }
 
     const API_TOKEN = await loadValue("token");
     if (!API_TOKEN) {
-      throw new Error("API token not found in storage");
+      console.error("API token not found in storage");
+      return null;
     }
 
-    const response = await fetch(`${API_BASE_URL}/wake`, {
+    return {
+      API_BASE_URL,
+      API_TOKEN,
+    };
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in getAPIconfig:", errorMessage);
+    return null;
+  }
+}
+
+export async function wakePC(): Promise<void> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/wake`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ token: API_TOKEN }),
+      body: JSON.stringify({ token: config.API_TOKEN }),
     });
 
     if (!response.ok) {
       throw new Error(`Failed to wake PC: ${response.statusText}`);
     }
-    //success toast
-    Toast.show("PC Waked!", 2);
+
+    // Success notification
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'PC is booting!'
+    })
   } catch (error) {
-    const errorMessage =
-      (error as Error).message || "An unexpected error occurred";
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
     console.error("Error in wakePC:", errorMessage);
-    Toast.show("Error: " + errorMessage, 2);
+    Toast.show({
+      type: 'error',
+      text1: 'Error',
+      text2: errorMessage
+    })
+  }
+}
+
+export async function dismissAlarm(): Promise<void> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/dismiss`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to dismiss alarm: ${response.statusText}`);
+    }
+
+    // Success notification
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'Alarm dismissed!'
+    })    
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in dismissAlarm:", errorMessage);
+    Toast.show({
+      type: 'error',
+      text1: 'Error',
+      text2: errorMessage
+    })
+  }
+}
+
+export async function getPSUStatus(): Promise<boolean | null> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/psu`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get PSU status: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.is_on === 1; // Convert 1 to true and 0 to false
+  } catch (error) {
+    console.error("Error in getPSUStatus:", error);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: (error as Error).message || "An unexpected error occurred",
+    });
+    return null;
+  }
+}
+
+export async function setPSU(status: boolean): Promise<boolean> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/psu`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+      body: JSON.stringify({ is_on: status }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to set PSU status: ${response.statusText}`);
+    }
+
+    Toast.show({
+      type: "success",
+      text1: "Success",
+      text2: `PSU turned ${status ? "on" : "off"}!`,
+    });
+
+    return status;
+  } catch (error) {
+    console.error("Error in setPSU:", error);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: (error as Error).message || "An unexpected error occurred",
+    });
+    return !status; // Return the opposite to avoid false state updates
+  }
+}
+
+
+export async function setLED(target: string): Promise<void> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/led`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+      body: JSON.stringify({ target: target }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to set LED status: ${response.statusText}`);
+    }
+
+    // Success notification
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'LED set!'
+    })
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in setLED:", errorMessage);
+    Toast.show({
+      type: 'error',
+      text1: 'Error',
+      text2: errorMessage
+    })
   }
 }

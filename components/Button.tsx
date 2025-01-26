@@ -17,27 +17,34 @@ const Button = ({
   className,
   children,
 }: {
-  title?: string; // Optional title for the button
+  title?: string;
   onPress: () => void;
   className?: string;
-  children?: React.ReactNode; // Allow custom children
+  children?: React.ReactNode;
 }) => {
   const { colorScheme } = useColorScheme();
   const pressStartTime = useRef<number | null>(null);
 
   const defaultStyles = StyleSheet.create({
-    button: {
-      backgroundColor: Colors[colorScheme ?? "light"].tint,
-      margin: 10,
-      borderRadius: 10,
-      overflow: "hidden", // Required for ripple effect to respect borders
-    },
-    text: {
-      color: Colors["dark"].text,
-      padding: 10,
-      textAlign: "center",
-    },
-  });
+  button: {
+    backgroundColor: Colors[colorScheme ?? "light"].tint,
+    margin: 10,
+    borderRadius: 10,
+    overflow: "hidden",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    flexShrink: 1, // Add this to allow content to shrink
+  },
+  text: {
+    color: Colors["dark"].text,
+    textAlign: "center",
+    fontSize: 16,
+    flexShrink: 1, // Ensure text can shrink if needed
+    flexWrap: "wrap", // Allow text to wrap
+  },
+});
 
   const rippleBackground =
     Platform.OS === "android" && Platform.Version >= 21

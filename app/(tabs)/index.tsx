@@ -1,4 +1,4 @@
-import { wakePC } from "@/services/api";
+import { dismissAlarm, getPSUStatus, setLED, setPSU, wakePC } from "@/services/api";
 import Text from "@/components/Text";
 import View from "@/components/View";
 import Button from "@/components/Button";
@@ -8,28 +8,42 @@ import {
   Switch,
   SafeAreaView,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ControlsScreen() {
-  const [psuOn, setPsuOn] = useState<boolean>(false); //TODO get first value from api
-  const handlePSUchange = () => {
-    setPsuOn(!psuOn);
-    //TODO send rest api request
+  const [psuOn, setPsuOn] = useState<boolean>(false);
+
+  // Fetch PSU status when the component mounts
+  useEffect(() => {
+    async function fetchPSUStatus() {
+      const status = await getPSUStatus();
+      if (status !== null) {
+        setPsuOn(status);
+      }
+    }
+
+    fetchPSUStatus();
+  }, []); // Runs only on mount
+
+  const handlePSUchange = async () => {
+    const updatedStatus = await setPSU(!psuOn); // Toggle PSU status via API
+    setPsuOn(updatedStatus); // Update state based on API success
   };
+
+
+  async function customLED() {
+    // color picker
+  }
 
   return (
     <View>
       <Text className="text-xl font-bold">Misc.</Text>
       <SafeAreaView style={{ flexDirection: "row" }}>
-        <Button
-          className="ml-0 py-5 px-2"
-          title="START PC"
-          onPress={() => wakePC()}
-        />
-        <Button className="py-5" title="DISMISS ALARM" onPress={() => {}} />
-        <Button className="mr-0 py-0 px-3" onPress={() => handlePSUchange()}>
-          <NativeView className="flex-row items-center py-10">
-            <Text className="mx-3">PSU</Text>
+        <Button className="ml-0 py-5" title="START PC" onPress={wakePC} />
+        <Button className="py-5 px-2" title="DISMISS ALARM" onPress={dismissAlarm} />
+        <Button className="mr-0 py-5 px-1" onPress={handlePSUchange}>
+          <SafeAreaView className="flex-row items-center">
+            <Text className="px-5 mr-0">PSU </Text>
             <Switch
               className="mr-3"
               thumbColor={"white"}
@@ -40,11 +54,23 @@ export default function ControlsScreen() {
                 Vibration.vibrate(10);
               }}
             />
-          </NativeView>
+          </SafeAreaView>
         </Button>
       </SafeAreaView>
       <Text className="text-xl font-bold">LED Control</Text>
-      <SafeAreaView style={{ flexDirection: "row" }}></SafeAreaView>
+      <SafeAreaView className="flex-row items-center">
+        <Button className="ml-0 py-10 px-10" title="OFF" onPress={() => setLED("BLACK")} />
+        <Button className="py-10 px-10" title=" RGB " onPress={() => setLED("RGB")} />
+        <Button className="mr-0 py-10 px-10" title=" ARGB " onPress={() => setLED("ARGB")} />
+      </SafeAreaView>
+      <SafeAreaView className="flex-row items-center">
+        <Button className="ml-0 py-10 px-3" title=" WARM WHITE " onPress={() => setLED("WARM_WHITE")} />
+        <Button className="py-10 px-3" title=" WHITE " onPress={() => setLED("WHITE")} />
+        <Button className="mr-0 py-10 px-3" title=" COLD WHITE " onPress={() => setLED("COLD_WHITE")} />
+      </SafeAreaView>
+      <SafeAreaView className="flex-row items-center">
+        <Button className="ml-0 py-10 px-10" title=" CUSTOM " onPress={customLED} />
+      </SafeAreaView>
     </View>
   );
 }

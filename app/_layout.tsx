@@ -1,12 +1,10 @@
 import { Stack } from "expo-router";
 import { useColorScheme } from "nativewind";
-import { useEffect } from "react";
 
 import { Colors } from "@/constants/Colors";
-
-// Import your global CSS file
-import "../global.css";
+import "../global.css"; // Import your global CSS file
 import { StatusBar } from "expo-status-bar";
+import Toast from 'react-native-toast-message';
 
 export default function RootLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();
@@ -29,6 +27,7 @@ export default function RootLayout() {
           }}
         />
       </Stack>
+      <Toast/>
     </>
   );
 }
