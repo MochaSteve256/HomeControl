@@ -41,7 +41,10 @@ const Button = ({
 
   const rippleBackground =
     Platform.OS === "android" && Platform.Version >= 21
-      ? TouchableNativeFeedback.Ripple(Colors[colorScheme ?? "light"].background, false)
+      ? TouchableNativeFeedback.Ripple(
+          Colors[colorScheme ?? "light"].background,
+          false,
+        )
       : undefined;
 
   const content = (

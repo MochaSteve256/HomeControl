@@ -9,22 +9,25 @@ import "../global.css";
 import { StatusBar } from "expo-status-bar";
 
 export default function RootLayout() {
-  const { colorScheme, setColorScheme} = useColorScheme();
-    setColorScheme("dark");
+  const { colorScheme, setColorScheme } = useColorScheme();
+  setColorScheme("dark");
 
   return (
     <>
       <StatusBar style="light" />
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ 
-          headerTitle: "Home Control",
-          headerStyle: { 
-            backgroundColor: Colors[colorScheme ?? "light"].header
+        <Stack.Screen
+          name="(tabs)"
+          options={{
+            headerTitle: "Home Control",
+            headerStyle: {
+              backgroundColor: Colors[colorScheme ?? "light"].header,
             },
-          headerTitleStyle: {
-            color: Colors["dark"].text
-          }
-          }} />
+            headerTitleStyle: {
+              color: Colors["dark"].text,
+            },
+          }}
+        />
       </Stack>
     </>
   );

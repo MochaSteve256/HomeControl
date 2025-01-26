@@ -1,37 +1,24 @@
 import React, { useEffect, useState } from "react";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Text from "@/components/Text";
 import View from "@/components/View";
 import TextInput from "@/components/TextInput";
+import { loadValue, saveValue } from "@/services/storage";
 
-export default function OptionsScreen() {
+const OptionsScreen = () => {
   const [serverUrl, setServerUrl] = useState<string>("");
+  const [apiToken, setApiToken] = useState<string>("");
 
-  // Load the server URL from AsyncStorage when the component mounts
   useEffect(() => {
-    const fetchServerUrl = async () => {
-      try {
-        const value = await AsyncStorage.getItem("serverUrl");
-        if (value !== null) {
-          setServerUrl(value); // Update state with stored value
-        }
-      } catch (e) {
-        console.error("Error reading server URL:", e);
-      }
+    const initializeValues = async () => {
+      const storedServerUrl = await loadValue("serverUrl");
+      const storedApiToken = await loadValue("token");
+
+      if (storedServerUrl) setServerUrl(storedServerUrl);
+      if (storedApiToken) setApiToken(storedApiToken);
     };
 
-    fetchServerUrl();
+    initializeValues();
   }, []);
-
-  // Handle input changes and save to AsyncStorage
-  const handleChange = async (value: string) => {
-    setServerUrl(value); // Update state
-    try {
-      await AsyncStorage.setItem("serverUrl", value); // Save updated value to AsyncStorage
-    } catch (e) {
-      console.error("Error saving server URL:", e);
-    }
-  };
 
   return (
     <View>
@@ -39,8 +26,23 @@ export default function OptionsScreen() {
       <TextInput
         placeholder="http://server:port"
         value={serverUrl}
-        onChangeText={handleChange} // Call handleChange when text changes
+        onChangeText={(value) => {
+          setServerUrl(value);
+          saveValue("serverUrl", value);
+        }}
+      />
+
+      <Text className="mt-4">API Token</Text>
+      <TextInput
+        placeholder="Enter your API token"
+        value={apiToken}
+        onChangeText={(value) => {
+          setApiToken(value);
+          saveValue("token", value);
+        }}
       />
     </View>
   );
-}
+};
+
+export default OptionsScreen;
