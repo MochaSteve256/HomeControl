@@ -11,6 +11,7 @@ export default function TextInput(props: React.ComponentProps<typeof NativeTextI
       backgroundColor: Colors[colorScheme ?? "light"].background,
       color: Colors[colorScheme ?? "light"].text,
       borderWidth: 2,
+      padding: 10,
       borderColor: Colors[colorScheme ?? "light"].tint,
       borderRadius: 5,
     }

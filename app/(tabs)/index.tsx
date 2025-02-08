@@ -1,12 +1,11 @@
 import { dismissAlarm, getPSUStatus, setLED, setPSU, wakePC } from "@/services/api";
 import Text from "@/components/Text";
-import View from "@/components/View";
+import ScrollView from "@/components/ScrollView";
 import Button from "@/components/Button";
 import {
-  View as NativeView,
   Vibration,
   Switch,
-  SafeAreaView,
+  SafeAreaView
 } from "react-native";
 import { useState, useEffect } from "react";
 
@@ -36,12 +35,12 @@ export default function ControlsScreen() {
   }
 
   return (
-    <View>
+    <ScrollView>
       <Text className="text-xl font-bold">Misc.</Text>
-      <SafeAreaView style={{ flexDirection: "row" }}>
-        <Button className="ml-0 py-5" title="START PC" onPress={wakePC} />
-        <Button className="py-5 px-2" title="DISMISS ALARM" onPress={dismissAlarm} />
-        <Button className="mr-0 py-5 px-1" onPress={handlePSUchange}>
+      <SafeAreaView className="flex-row space-x-4">
+        <Button className="ml-0 w-32 h-24" title="START PC" onPress={wakePC} />
+        <Button className="w-32 h-24" title="DISMISS ALARM" onPress={dismissAlarm} />
+        <Button className="mr-0 w-32 h-24" onPress={handlePSUchange}>
           <SafeAreaView className="flex-row items-center">
             <Text className="px-5" style={{ color: "white" }} >PSU </Text>
             <Switch
@@ -58,19 +57,21 @@ export default function ControlsScreen() {
         </Button>
       </SafeAreaView>
       <Text className="text-xl font-bold">LED Control</Text>
-      <SafeAreaView className="flex-row items-center">
-        <Button className="ml-0 py-10 px-10" title="OFF" onPress={() => setLED("BLACK")} />
-        <Button className="py-10 px-10" title=" RGB " onPress={() => setLED("RGB")} />
-        <Button className="mr-0 py-10 px-10" title=" ARGB " onPress={() => setLED("ARGB")} />
+      <SafeAreaView className="flex-row space-x-4">
+        <Button className="ml-0 w-32 h-24" title="OFF" onPress={() => setLED("BLACK")} />
+        <Button className="w-32 h-24" title=" RGB " onPress={() => setLED("RGB")} />
+        <Button className="mr-0 w-32 h-24" title=" ARGB " onPress={() => setLED("ARGB")} />
       </SafeAreaView>
-      <SafeAreaView className="flex-row items-center">
-        <Button className="ml-0 py-10 px-7" title=" WHITE " onPress={() => setLED("WHITE")} />
-        <Button className="py-10 px-1" title="WARM WHITE" onPress={() => setLED("WARM_WHITE")} />
-        <Button className="mr-0 py-10 px-" title="COLD WHITE" onPress={() => setLED("COLD_WHITE")} />
+
+      <SafeAreaView className="flex-row space-x-4 mt-3">
+        <Button className="ml-0 w-32 h-24" title=" WHITE " onPress={() => setLED("WHITE")} />
+        <Button className="w-32 h-24" title="WARM WHITE" onPress={() => setLED("WARM_WHITE")} />
+        <Button className="mr-0 w-32 h-24" title="COLD WHITE " onPress={() => setLED("COLD_WHITE")} />
       </SafeAreaView>
-      <SafeAreaView className="flex-row items-center">
-        <Button className="ml-0 py-10 px-10" title=" CUSTOM " onPress={customLED} />
+
+      <SafeAreaView className="flex-row mt-3">
+        <Button className="ml-0 w-32 h-24" title="CUSTOM " onPress={customLED} />
       </SafeAreaView>
-    </View>
+    </ScrollView>
   );
 }

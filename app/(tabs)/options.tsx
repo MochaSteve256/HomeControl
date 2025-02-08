@@ -54,7 +54,7 @@ const OptionsScreen = () => {
       />
       <Text className="text-xl ml-1 mt-4">Appearance </Text>
       <Button
-        className="ml-0 mr-0 py-1 px-1"
+        className="ml-0 mr-0 py-4 px-1"
         onPress={toggleColorScheme}
       >
         <SafeAreaView className="flex-row items-center">
