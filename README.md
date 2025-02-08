@@ -1,6 +1,6 @@
 # HomeControl
-This is my android frontend for remotely starting my pc and controlling my led stripe.
-It is made with Expo and React Native.
+This is my android frontend for remotely starting my PC and controlling my LED stripe.
+It is made using Expo and React Native.
 
 ## Running
 ```bash
@@ -14,7 +14,6 @@ rm build- #...xxx.aab
 rm bundle.apks
 
 # update app version code
-```bash
 vi app.json
 
 # build
