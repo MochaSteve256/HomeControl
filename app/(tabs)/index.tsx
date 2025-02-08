@@ -38,7 +38,7 @@ export default function ControlsScreen() {
     <ScrollView>
       <Text className="text-xl font-bold">Misc.</Text>
       <SafeAreaView className="flex-row space-x-4">
-        <Button className="ml-0 w-32 h-24" title="START PC" onPress={wakePC} />
+        <Button className="ml-0 w-32 h-24" title=" START PC " onPress={wakePC} />
         <Button className="w-32 h-24" title="DISMISS ALARM" onPress={dismissAlarm} />
         <Button className="mr-0 w-32 h-24" onPress={handlePSUchange}>
           <SafeAreaView className="flex-row items-center">
@@ -62,13 +62,11 @@ export default function ControlsScreen() {
         <Button className="w-32 h-24" title=" RGB " onPress={() => setLED("RGB")} />
         <Button className="mr-0 w-32 h-24" title=" ARGB " onPress={() => setLED("ARGB")} />
       </SafeAreaView>
-
       <SafeAreaView className="flex-row space-x-4 mt-3">
         <Button className="ml-0 w-32 h-24" title=" WHITE " onPress={() => setLED("WHITE")} />
         <Button className="w-32 h-24" title="WARM WHITE" onPress={() => setLED("WARM_WHITE")} />
         <Button className="mr-0 w-32 h-24" title="COLD WHITE " onPress={() => setLED("COLD_WHITE")} />
       </SafeAreaView>
-
       <SafeAreaView className="flex-row mt-3">
         <Button className="ml-0 w-32 h-24" title="CUSTOM " onPress={customLED} />
       </SafeAreaView>
