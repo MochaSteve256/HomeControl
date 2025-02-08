@@ -10,7 +10,7 @@ npx expo
 ## Compiling and bundling
 ```bash
 # remove old files
-rm build- #...xxx.aab
+rm build- # ...xxx.aab
 rm bundle.apks
 
 # update app version code
