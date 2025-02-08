@@ -16,7 +16,6 @@ rm bundle.apks
 # update app version code
 ```bash
 vi app.json
-```
 
 # build
 npx eas build -p android --local
