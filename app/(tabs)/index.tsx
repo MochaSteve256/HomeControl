@@ -5,8 +5,9 @@ import Button from "@/components/Button";
 import {
   Vibration,
   Switch,
-  SafeAreaView
+  SafeAreaView,
 } from "react-native";
+import Slider from "@react-native-community/slider";
 import { useState, useEffect } from "react";
 
 export default function ControlsScreen() {
@@ -34,9 +35,13 @@ export default function ControlsScreen() {
     // color picker
   }
 
+  async function moreLED() {
+    // modal for sunrise, sunset and alarm
+  }
+
   return (
     <ScrollView>
-      <Text className="text-xl font-bold">Misc.</Text>
+      <Text className="text-2xl font-bold">Misc.</Text>
       <SafeAreaView className="flex-row space-x-4">
         <Button className="ml-0 w-32 h-24" title=" START PC " onPress={wakePC} />
         <Button className="w-32 h-24" title="DISMISS ALARM" onPress={dismissAlarm} />
@@ -56,19 +61,26 @@ export default function ControlsScreen() {
           </SafeAreaView>
         </Button>
       </SafeAreaView>
-      <Text className="text-xl font-bold">LED Control</Text>
-      <SafeAreaView className="flex-row space-x-4">
+      <Text className="text-2xl font-bold">LED Control</Text>
+      <Text className="text-lg font-bold">Misc.</Text>
+      <SafeAreaView className="flex-row space-x-4 mb-1">
         <Button className="ml-0 w-32 h-24" title="OFF" onPress={() => setLED("BLACK")} />
-        <Button className="w-32 h-24" title=" RGB " onPress={() => setLED("RGB")} />
+        <Button className="w-32 h-24" title="CUSTOM " onPress={customLED} />
+        <Button className="mr-0 w-32 h-24" title=" ••• " onPress={moreLED} />
+      </SafeAreaView>
+      <Text className="text-lg font-bold">Special</Text>
+      <SafeAreaView className="flex-row space-x-4 mb-1">
+        <Button className="ml-0 w-32 h-24" title=" RGB " onPress={() => setLED("RGB")} />
         <Button className="mr-0 w-32 h-24" title=" ARGB " onPress={() => setLED("ARGB")} />
       </SafeAreaView>
-      <SafeAreaView className="flex-row space-x-4 mt-3">
+      <Text className="text-lg font-bold">White tones</Text>
+      <SafeAreaView className="flex-row space-x-4">
         <Button className="ml-0 w-32 h-24" title=" WHITE " onPress={() => setLED("WHITE")} />
         <Button className="w-32 h-24" title="WARM WHITE" onPress={() => setLED("WARM_WHITE")} />
         <Button className="mr-0 w-32 h-24" title="COLD WHITE " onPress={() => setLED("COLD_WHITE")} />
       </SafeAreaView>
       <SafeAreaView className="flex-row mt-3">
-        <Button className="ml-0 w-32 h-24" title="CUSTOM " onPress={customLED} />
+        
       </SafeAreaView>
     </ScrollView>
   );
