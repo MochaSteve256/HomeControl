@@ -169,11 +169,17 @@ export async function setPSU(status: boolean): Promise<boolean> {
 }
 
 
-export async function setLED(target: string): Promise<void> {
+export async function setLED(target: string, color?: [number, number, number]): Promise<void> {
   try {
     const config = await getAPIconfig();
     if (!config) {
       throw new Error("API configuration not found");
+    }
+
+    // Build the request payload
+    const payload: { target: string; color?: [number, number, number] } = { target };
+    if (color) {
+      payload.color = color;
     }
 
     const response = await fetch(`${config.API_BASE_URL}/led`, {
@@ -182,7 +188,7 @@ export async function setLED(target: string): Promise<void> {
         "Content-Type": "application/json",
         token: config.API_TOKEN,
       },
-      body: JSON.stringify({ target: target }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -191,17 +197,17 @@ export async function setLED(target: string): Promise<void> {
 
     // Success notification
     Toast.show({
-      type: 'success',
-      text1: 'Success',
-      text2: 'LED set!'
-    })
+      type: "success",
+      text1: "Success",
+      text2: "LED set!",
+    });
   } catch (error) {
     const errorMessage = (error as Error).message || "An unexpected error occurred";
     console.error("Error in setLED:", errorMessage);
     Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: errorMessage
-    })
+      type: "error",
+      text1: "Error",
+      text2: errorMessage,
+    });
   }
 }
