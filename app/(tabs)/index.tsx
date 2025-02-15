@@ -1,13 +1,13 @@
-import { dismissAlarm, getPSUStatus, setLED, setPSU, wakePC } from "@/services/api";
+import { dismissAlarm, getPSUStatus, getVolume, setVolume, setLED, setPSU, wakePC } from "@/services/api";
 import Text from "@/components/Text";
-import ScrollView from "@/components/ScrollView";
+import View from "@/components/View";
 import Button from "@/components/Button";
 import {
   Vibration,
   Switch,
   SafeAreaView,
   Modal,
-  View,
+  View as NativeView,
   StyleSheet,
 } from "react-native";
 import Slider from '@react-native-community/slider';
@@ -19,9 +19,10 @@ import { GestureHandlerRootView, Pressable, TouchableWithoutFeedback } from "rea
 
 export default function ControlsScreen() {
   const [psuOn, setPsuOn] = useState<boolean>(false);
-
+  const [showColorModal, setShowColorModal] = useState(false);
+  const [selectedColor, setSelectedColor] = useState("#ffffff");
   const { colorScheme } = useColorScheme();
-
+  
   // Fetch PSU status when the component mounts
   useEffect(() => {
     async function fetchPSUStatus() {
@@ -30,17 +31,37 @@ export default function ControlsScreen() {
         setPsuOn(status);
       }
     }
-
+    
     fetchPSUStatus();
   }, []); // Runs only on mount
+  
+  const [pcVolume, setPcVolume] = useState<number>(0.3);
+  const [isAdjusting, setIsAdjusting] = useState<boolean>(false);
+
+  // Fetch volume every second, but don't override if user is adjusting
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!isAdjusting) {
+        const volume = await getVolume();
+        if (volume !== null) {
+          setPcVolume(volume);
+        }
+      }
+    }, 1000); // Fetch every second
+
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, [isAdjusting]);
+
+  const handleVolumeChange = async (value: number) => {
+    setPcVolume(value);
+    await setVolume(value); // Update volume in backend or device
+  };
 
   const handlePSUchange = async () => {
     const updatedStatus = await setPSU(!psuOn); // Toggle PSU status via API
     setPsuOn(updatedStatus); // Update state based on API success
   };
 
-  const [showColorModal, setShowColorModal] = useState(false);
-  const [selectedColor, setSelectedColor] = useState("#ffffff");
 
   const styles = StyleSheet.create({
     modalContainer: {
@@ -75,7 +96,7 @@ export default function ControlsScreen() {
 
   return (
     <>
-      <ScrollView>
+      <View>
         <Text className="text-2xl font-bold">Misc.</Text>
         <SafeAreaView className="flex-row space-x-4">
           <Button className="ml-0 w-32 h-24" title=" START PC " onPress={wakePC} />
@@ -96,6 +117,26 @@ export default function ControlsScreen() {
             </SafeAreaView>
           </Button>
         </SafeAreaView>
+        <Text className="text-lg font-bold">PC Volume</Text>
+        <SafeAreaView className="flex-row space-x-4 mt-1 mb-3">
+          <Slider
+            style={{ flex: 1, marginTop: 10 }}
+            thumbTintColor={Colors[colorScheme ?? "light"].tint}
+            minimumValue={0}
+            maximumValue={1}
+            minimumTrackTintColor="#FFFFFF"
+            maximumTrackTintColor="#FFFFFF"
+            onSlidingStart={() => {
+              setIsAdjusting(true);
+              Vibration.vibrate(10);
+            }}
+            onSlidingComplete={(value) => {
+              handleVolumeChange(value);
+              Vibration.vibrate(10);
+            }}
+            value={pcVolume}
+          />
+        </SafeAreaView>
         <Text className="text-2xl font-bold">LED Control</Text>
         <Text className="text-lg font-bold">Misc.</Text>
         <SafeAreaView className="flex-row space-x-4 mb-1">
@@ -114,7 +155,8 @@ export default function ControlsScreen() {
           <Button className="w-32 h-24" title="WARM WHITE" onPress={() => setLED("WARM_WHITE")} />
           <Button className="mr-0 w-32 h-24" title="COLD WHITE " onPress={() => setLED("COLD_WHITE")} />
         </SafeAreaView>
-        <Text className="font-bold mt-1">Brightness</Text>
+        {/*
+        <Text className="font-bold mt-2 mb-1">Brightness</Text>
         <Slider
           style={{ flex: 1, marginTop: 10 }}
           thumbTintColor={Colors[colorScheme ?? "light"].tint}
@@ -125,7 +167,7 @@ export default function ControlsScreen() {
           onSlidingStart={() => Vibration.vibrate(10)}
           onSlidingComplete={() => Vibration.vibrate(10)}
         />
-        <Text className="font-bold mt-1">Hue</Text>
+        <Text className="font-bold mt-3 mb-1">Hue</Text>
         <Slider
           style={{ flex: 1, marginTop: 10 }}
           thumbTintColor={Colors[colorScheme ?? "light"].tint}
@@ -136,11 +178,12 @@ export default function ControlsScreen() {
           onSlidingStart={() => Vibration.vibrate(10)}
           onSlidingComplete={() => Vibration.vibrate(10)}
         />
-      </ScrollView>
+        */}
+      </View>
       <Modal onRequestClose={() => setShowColorModal(false)} visible={showColorModal} animationType="fade" transparent>
         <GestureHandlerRootView>
           <Pressable style={styles.modalContainer} onPress={() => setShowColorModal(false)}>
-            <View style={styles.contentContainer}>
+            <NativeView style={styles.contentContainer}>
               <ColorPicker
                 style={{ width: '100%' }}
                 value={selectedColor}
@@ -156,7 +199,7 @@ export default function ControlsScreen() {
                 <Swatches style={styles.componentMargin} />
                 <Button title="Done" onPress={() => setShowColorModal(false)} />
               </ColorPicker>
-            </View>
+            </NativeView>
           </Pressable>
         </GestureHandlerRootView>
       </Modal>

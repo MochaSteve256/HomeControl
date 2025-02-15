@@ -211,3 +211,73 @@ export async function setLED(target: string, color?: [number, number, number]): 
     });
   }
 }
+
+export async function getVolume(): Promise<number | null> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/volume`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get volume: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.volume; // Return the volume value
+  } catch (error) {
+    console.error("Error in getVolume:", error);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: (error as Error).message || "An unexpected error occurred",
+    });
+    return null;
+  }
+}
+
+export async function setVolume(volume: number): Promise<number> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/volume`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+      body: JSON.stringify({ volume }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to set volume: ${response.statusText}`);
+    }
+
+    Toast.show({
+      type: "success",
+      text1: "Success",
+      text2: `Volume set to ${Math.round(volume * 100)}!`,
+    });
+
+    return volume;
+  } catch (error) {
+    console.error("Error in setVolume:", error);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: (error as Error).message || "An unexpected error occurred",
+    });
+    return volume; // Return the original volume to avoid false state updates
+  }
+}
