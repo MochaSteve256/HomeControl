@@ -281,3 +281,158 @@ export async function setVolume(volume: number): Promise<number> {
     return volume; // Return the original volume to avoid false state updates
   }
 }
+
+// Define the Alarm interface for type safety
+export interface Alarm {
+  name: string;
+  action: string;
+  repeat: string;
+  time: string;
+  enabled: boolean;
+}
+
+
+// Get all alarms
+export async function getAlarms(): Promise<Alarm[]> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/alarm`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get alarms: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.schedules;
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in getAlarms:", errorMessage);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: errorMessage,
+    });
+    return [];
+  }
+}
+
+// Create a new alarm
+export async function createAlarm(alarm: Alarm): Promise<void> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/alarm`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+      body: JSON.stringify(alarm),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create alarm: ${response.statusText}`);
+    }
+
+    Toast.show({
+      type: "success",
+      text1: "Success",
+      text2: "Alarm created!",
+    });
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in createAlarm:", errorMessage);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: errorMessage,
+    });
+  }
+}
+
+// Remove an existing alarm by name
+export async function removeAlarm(name: string): Promise<void> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/alarm`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to remove alarm: ${response.statusText}`);
+    }
+
+    Toast.show({
+      type: "success",
+      text1: "Success",
+      text2: "Alarm removed!",
+    });
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in removeAlarm:", errorMessage);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: errorMessage,
+    });
+  }
+}
+
+// Update (enable/disable) an alarm by name
+export async function updateAlarmStatus(name: string, enabled: boolean): Promise<void> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/alarm`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+      body: JSON.stringify({ name, enabled }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update alarm status: ${response.statusText}`);
+    }
+
+    Toast.show({
+      type: "success",
+      text1: "Success",
+      text2: `Alarm ${enabled ? "enabled" : "disabled"}!`,
+    });
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in updateAlarmStatus:", errorMessage);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: errorMessage,
+    });
+  }
+}
