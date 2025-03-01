@@ -11,7 +11,12 @@ import {
   removeAlarm,
 } from "@/services/api";
 
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "nativewind";
+
 export default function Automations() {
+  const { colorScheme } = useColorScheme();
+
   const [alarms, setAlarms] = useState<Alarm[]>([]);
 
   // Fetch alarms from the API
@@ -37,7 +42,6 @@ export default function Automations() {
 
   // Delete an alarm
   const handleDelete = (alarm: Alarm) => {
-    // Optionally, confirm deletion
     Alert.alert(
       "Delete Alarm",
       `Are you sure you want to delete the alarm "${alarm.name}"?`,
@@ -61,9 +65,7 @@ export default function Automations() {
   };
 
   // Create a new alarm with default values.
-  // In a real app, you might show a form/modal to collect these details.
   const handleAdd = async () => {
-    // For demonstration, create a dummy alarm.
     const newAlarm: Alarm = {
       name: `Alarm ${alarms.length + 1}`,
       action: "turn_on_light",
@@ -73,7 +75,6 @@ export default function Automations() {
     };
 
     await createAlarm(newAlarm);
-    // Refresh the list after creating a new alarm.
     fetchAlarms();
   };
 
@@ -87,17 +88,35 @@ export default function Automations() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              justifyContent: "space-between",
               padding: 10,
               borderBottomWidth: 1,
               borderColor: "#ccc",
             }}
           >
-            <Text>{`${alarm.name} - ${alarm.time}`}</Text>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
+            {/* First column: Alarm Name */}
+            <View style={{ flex: 1 }}>
+              <Text>{alarm.name}</Text>
+            </View>
+
+            {/* Second column: Alarm Time */}
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text>{alarm.time} </Text>
+            </View>
+
+            {/* Third column: Actions (Switch and Delete) */}
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                justifyContent: "flex-end",
+                alignItems: "center",
+              }}
+            >
               <Switch
                 value={alarm.enabled}
                 onValueChange={(value) => handleToggle(alarm, value)}
+                thumbColor={"white"}
+                trackColor={{ false: "darkred", true: "green" }}
               />
               <TouchableOpacity
                 onPress={() => handleDelete(alarm)}
@@ -113,16 +132,16 @@ export default function Automations() {
         onPress={handleAdd}
         style={{
           position: "absolute",
-          bottom: 20,
-          right: 20,
-          backgroundColor: "#007AFF",
+          bottom: 45,
+          left: 20,
+          backgroundColor: Colors[colorScheme ?? "light"].tint,
           width: 60,
           height: 60,
           borderRadius: 30,
           justifyContent: "center",
           alignItems: "center",
-          elevation: 5, // for Android shadow
-          shadowColor: "#000", // for iOS shadow
+          elevation: 5,
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.3,
           shadowRadius: 2,
