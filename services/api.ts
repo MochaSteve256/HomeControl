@@ -436,3 +436,36 @@ export async function updateAlarmStatus(name: string, enabled: boolean): Promise
     });
   }
 }
+
+export async function getAlarmActions(): Promise<string[]> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/alarm/actions`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get alarm actions: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.actions;
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in getAlarmActions:", errorMessage);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: errorMessage,
+    });
+    return [];
+  }
+}

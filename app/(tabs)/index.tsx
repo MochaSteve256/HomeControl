@@ -16,6 +16,8 @@ import { Colors } from "@/constants/Colors";
 import { useState, useEffect } from "react";
 import { useColorScheme } from "nativewind";
 import { GestureHandlerRootView, Pressable, TouchableWithoutFeedback } from "react-native-gesture-handler";
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 export default function ControlsScreen() {
   const [psuOn, setPsuOn] = useState<boolean>(false);
@@ -23,17 +25,19 @@ export default function ControlsScreen() {
   const [selectedColor, setSelectedColor] = useState("#ffffff");
   const { colorScheme } = useColorScheme();
   
-  // Fetch PSU status when the component mounts
-  useEffect(() => {
-    async function fetchPSUStatus() {
-      const status = await getPSUStatus();
-      if (status !== null) {
-        setPsuOn(status);
-      }
-    }
+  // Fetch PSU status when the component is focused
+  useFocusEffect(
+      useCallback(() => {
+        async function fetchPSUStatus() {
+          const status = await getPSUStatus();
+          if (status !== null) {
+            setPsuOn(status);
+          }
+        }
     
-    fetchPSUStatus();
-  }, []); // Runs only on mount
+        fetchPSUStatus();
+      }, [])
+    );
   
   const [pcVolume, setPcVolume] = useState<number>(0.3);
   const [isAdjusting, setIsAdjusting] = useState<boolean>(false);

@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Switch, ScrollView, TouchableOpacity, Alert } from "react-native";
+import {
+  Switch,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  TextInput,
+  Button,
+  Platform,
+  StyleSheet,
+  SafeAreaView,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import Text from "@/components/Text";
 import View from "@/components/View";
 import {
@@ -9,30 +22,53 @@ import {
   createAlarm,
   updateAlarmStatus,
   removeAlarm,
+  getAlarmActions,
 } from "@/services/api";
-
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "nativewind";
 
 export default function Automations() {
   const { colorScheme } = useColorScheme();
-
   const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const [actionsList, setActionsList] = useState<string[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newAlarmName, setNewAlarmName] = useState("");
+  const [newAlarmAction, setNewAlarmAction] = useState("psu_on");
+  const [newAlarmTime, setNewAlarmTime] = useState("07:00");
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<"daily" | "custom">("daily");
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
-  // Fetch alarms from the API
+  // Days of week for custom repeat
+  const daysOfWeek = [
+    { code: "mo", label: "Mon" },
+    { code: "tu", label: "Tue" },
+    { code: "we", label: "Wed" },
+    { code: "th", label: "Thu" },
+    { code: "fr", label: "Fri" },
+    { code: "sa", label: "Sat" },
+    { code: "su", label: "Sun" },
+  ];
+
+  // Fetch alarms and actions from the API
   const fetchAlarms = async () => {
     const data = await getAlarms();
     setAlarms(data);
   };
 
+  const fetchActions = async () => {
+    const actions = await getAlarmActions();
+    setActionsList(actions);
+  };
+
   useEffect(() => {
     fetchAlarms();
+    fetchActions();
   }, []);
 
   // Toggle alarm enable/disable
   const handleToggle = async (alarm: Alarm, newValue: boolean) => {
     await updateAlarmStatus(alarm.name, newValue);
-    // Update local state after toggling
     setAlarms((prev) =>
       prev.map((a) =>
         a.name === alarm.name ? { ...a, enabled: newValue } : a
@@ -46,109 +82,326 @@ export default function Automations() {
       "Delete Alarm",
       `Are you sure you want to delete the alarm "${alarm.name}"?`,
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
             await removeAlarm(alarm.name);
-            setAlarms((prev) =>
-              prev.filter((a) => a.name !== alarm.name)
-            );
+            setAlarms((prev) => prev.filter((a) => a.name !== alarm.name));
           },
         },
       ]
     );
   };
 
-  // Create a new alarm with default values.
-  const handleAdd = async () => {
+  // Save new alarm from modal inputs
+  const handleSave = async () => {
+    const repeatValue = repeatMode === "daily" ? "daily" : selectedDays.join("");
     const newAlarm: Alarm = {
-      name: `Alarm ${alarms.length + 1}`,
-      action: "turn_on_light",
-      repeat: "daily",
-      time: "07:00",
+      name: newAlarmName || `Alarm ${alarms.length + 1}`,
+      action: newAlarmAction,
+      repeat: repeatValue,
+      time: newAlarmTime,
       enabled: true,
     };
-
     await createAlarm(newAlarm);
     fetchAlarms();
+    // Reset modal state
+    setNewAlarmName("");
+    setNewAlarmAction("psu_on");
+    setNewAlarmTime("07:00");
+    setRepeatMode("daily");
+    setSelectedDays([]);
+    setModalVisible(false);
+  };
+
+  // Handle time picker change
+  const onTimeChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowTimePicker(false);
+    }
+    if (selectedDate) {
+      const hours = selectedDate.getHours().toString().padStart(2, "0");
+      const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
+      setNewAlarmTime(`${hours}:${minutes}`);
+    }
+  };
+
+  // Toggle day selection for custom repeat
+  const toggleDay = (dayCode: string) => {
+    if (selectedDays.includes(dayCode)) {
+      setSelectedDays(selectedDays.filter((d) => d !== dayCode));
+    } else {
+      setSelectedDays([...selectedDays, dayCode]);
+    }
+  };
+
+  // Format repeat string for display
+  const formatRepeat = (repeatString: string) => {
+    if (repeatString === "daily") {
+      return "Daily";
+    }
+    
+    const dayLabels: Record<string, string> = {
+      mo: "Mon",
+      tu: "Tue",
+      we: "Wed",
+      th: "Thu",
+      fr: "Fri",
+      sa: "Sat",
+      su: "Sun",
+    };
+    
+    let selectedDayLabels = [];
+    for (const [code, label] of Object.entries(dayLabels)) {
+      if (repeatString.includes(code)) {
+        selectedDayLabels.push(label);
+      }
+    }
+    
+    return selectedDayLabels.join(", ");
   };
 
   return (
     <View style={{ flex: 1 }}>
       <Text className="text-xl">Automations</Text>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
         {alarms.map((alarm) => (
-          <View
-            key={alarm.name}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 10,
-              borderBottomWidth: 1,
-              borderColor: "#ccc",
-            }}
-          >
-            {/* First column: Alarm Name */}
+          // In the alarmRow component, adjust the widths
+          <View key={alarm.name} style={styles.alarmRow}>
             <View style={{ flex: 1 }}>
-              <Text>{alarm.name}</Text>
+              <Text style={styles.nameText}>{alarm.name}</Text>
             </View>
-
-            {/* Second column: Alarm Time */}
-            <View style={{ flex: 1, alignItems: "center" }}>
-              <Text>{alarm.time} </Text>
+            <View style={{ width: 50, alignItems: "center" }}>
+              <Text style={styles.timeText}>{alarm.time}</Text>
             </View>
-
-            {/* Third column: Actions (Switch and Delete) */}
-            <View
-              style={{
-                flex: 1,
-                flexDirection: "row",
-                justifyContent: "flex-end",
-                alignItems: "center",
-              }}
-            >
+            <View style={{ width: 90, alignItems: "flex-start" }}>
+              <Text numberOfLines={1} ellipsizeMode="tail" style={styles.repeatText}>
+                {formatRepeat(alarm.repeat)}
+              </Text>
+            </View>
+            <View style={styles.actionContainer}>
               <Switch
                 value={alarm.enabled}
                 onValueChange={(value) => handleToggle(alarm, value)}
                 thumbColor={"white"}
                 trackColor={{ false: "darkred", true: "green" }}
+                style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
               />
-              <TouchableOpacity
-                onPress={() => handleDelete(alarm)}
-                style={{ marginLeft: 10 }}
-              >
-                <Ionicons name="trash" size={24} color="red" />
+              <TouchableOpacity onPress={() => handleDelete(alarm)} style={{ marginLeft: 2 }}>
+                <Ionicons name="trash" size={18} color="red" />
               </TouchableOpacity>
             </View>
           </View>
         ))}
       </ScrollView>
-      <TouchableOpacity
-        onPress={handleAdd}
-        style={{
-          position: "absolute",
-          bottom: 45,
-          left: 20,
-          backgroundColor: Colors[colorScheme ?? "light"].tint,
-          width: 60,
-          height: 60,
-          borderRadius: 30,
-          justifyContent: "center",
-          alignItems: "center",
-          elevation: 5,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.3,
-          shadowRadius: 2,
-        }}
+
+      {/* Improved Modal for Adding a New Alarm */}
+      <Modal
+        visible={modalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
       >
-        <Ionicons name="add" size={30} color="#fff" />
+        <SafeAreaView style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <ScrollView contentContainerStyle={styles.modalContent}>
+              <Text className="text-xl mb-4">Add New Alarm</Text>
+              <Text>Name:</Text>
+              <TextInput
+                value={newAlarmName}
+                onChangeText={setNewAlarmName}
+                placeholder="Enter alarm name"
+                style={styles.input}
+              />
+              <Text>Action:</Text>
+              <Picker
+                selectedValue={newAlarmAction}
+                onValueChange={(itemValue) => setNewAlarmAction(itemValue)}
+                style={styles.picker}
+              >
+                {actionsList.map((action) => (
+                  <Picker.Item key={action} label={action} value={action} />
+                ))}
+              </Picker>
+              <Text>Time: {newAlarmTime}</Text>
+              <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.timeButton}>
+                <Text style={styles.buttonText}>Select Time</Text>
+              </TouchableOpacity>
+              {showTimePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="time"
+                  display="default"
+                  onChange={onTimeChange}
+                />
+              )}
+              <Text>Repeat:</Text>
+              <View style={styles.repeatContainer}>
+                <TouchableOpacity
+                  onPress={() => setRepeatMode("daily")}
+                  style={[
+                    styles.repeatButton,
+                    { backgroundColor: repeatMode === "daily" ? Colors[colorScheme ?? "light"].tint : "#ccc" },
+                  ]}
+                >
+                  <Text style={styles.buttonText}>Daily </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setRepeatMode("custom")}
+                  style={[
+                    styles.repeatButton,
+                    { backgroundColor: repeatMode === "custom" ? Colors[colorScheme ?? "light"].tint : "#ccc" },
+                  ]}
+                >
+                  <Text style={styles.buttonText}>Custom</Text>
+                </TouchableOpacity>
+              </View>
+              {repeatMode === "custom" && (
+                <View style={styles.daysContainer}>
+                  {daysOfWeek.map((day) => (
+                    <TouchableOpacity
+                      key={day.code}
+                      onPress={() => toggleDay(day.code)}
+                      style={[
+                        styles.dayButton,
+                        {
+                          backgroundColor: selectedDays.includes(day.code)
+                            ? Colors[colorScheme ?? "light"].tint
+                            : "#ccc",
+                        },
+                      ]}
+                    >
+                      <Text style={styles.dayButtonText}>{day.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              <View style={styles.modalActions}>
+                <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                <Button title="Save" onPress={handleSave} />
+              </View>
+            </ScrollView>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.fab}>
+        <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  alarmRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderColor: "#ccc",
+    paddingVertical: 6, // Reduced from 10
+    paddingHorizontal: 0, // Reduced from 5
+  },
+  nameText: {
+    fontSize: 14, // Smaller text size
+  },
+  timeText: {
+    fontSize: 13, // Smaller text size
+  },
+  repeatText: {
+    fontSize: 11, // Even smaller
+    color: "#fff",
+  },
+  actionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 0, // Add slight padding
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 5,
+  },
+  modalContainer: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    width: "100%",
+    maxHeight: "90%",
+    padding: 20,
+  },
+  modalContent: {
+    paddingBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 8,
+    marginBottom: 10,
+  },
+  picker: {
+    height: 50,
+    marginBottom: 10,
+  },
+  timeButton: {
+    backgroundColor: "#007AFF",
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "white",
+  },
+  repeatContainer: {
+    flexDirection: "row",
+    marginBottom: 10,
+    alignItems: "center",
+  },
+  repeatButton: {
+    padding: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  daysContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  dayButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    margin: 5,
+  },
+  dayButtonText: {
+    color: "white",
+    fontSize: 12,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  fab: {
+    position: "absolute",
+    bottom: 40,
+    left: 1,
+    backgroundColor: Colors["light"].tint,
+    width: 60,
+    height: 60,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+  },
+});
