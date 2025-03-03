@@ -9,8 +9,9 @@ import {
   Button,
   Platform,
   StyleSheet,
-  SafeAreaView,
+  Pressable,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -29,6 +30,119 @@ import { useColorScheme } from "nativewind";
 
 export default function Automations() {
   const { colorScheme } = useColorScheme();
+  const styles = StyleSheet.create({
+    alarmRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderBottomWidth: 1,
+      borderColor: "#ccc",
+      paddingVertical: 6,
+      paddingHorizontal: 0,
+    },
+    nameText: {
+      fontSize: 14,
+    },
+    timeText: {
+      fontSize: 13,
+    },
+    repeatText: {
+      fontSize: 11,
+      color: "#fff",
+    },
+    actionContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingLeft: 0,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: "#ccc",
+      borderRadius: 5,
+      padding: 8,
+      marginBottom: 10,
+    },
+    picker: {
+      height: 50,
+      marginBottom: 10,
+    },
+    timeButton: {
+      backgroundColor: "#007AFF",
+      padding: 10,
+      borderRadius: 5,
+      marginBottom: 10,
+      alignItems: "center",
+    },
+    buttonText: {
+      color: "white",
+    },
+    repeatContainer: {
+      flexDirection: "row",
+      marginBottom: 10,
+      alignItems: "center",
+    },
+    repeatButton: {
+      padding: 10,
+      borderRadius: 5,
+      marginRight: 10,
+    },
+    daysContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      marginBottom: 10,
+    },
+    dayButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
+      margin: 5,
+    },
+    dayButtonText: {
+      color: "white",
+      fontSize: 12,
+    },
+    modalActions: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    fab: {
+      position: "absolute",
+      bottom: 40,
+      left: 1,
+      backgroundColor: Colors[colorScheme ?? "light"].tint,
+      width: 60,
+      height: 60,
+      borderRadius: 15,
+      justifyContent: "center",
+      alignItems: "center",
+      elevation: 10,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 2,
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    contentContainer: {
+      width: "80%",
+      height: "72%",
+      backgroundColor: Colors[colorScheme ?? "light"].background,
+      borderRadius: 12,
+      borderColor: Colors[colorScheme ?? "light"].text,
+      borderWidth: 2,
+      padding: 20,
+    },
+    modalContent: {
+      paddingBottom: 20,
+    },
+  });
+
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [actionsList, setActionsList] = useState<string[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -142,7 +256,7 @@ export default function Automations() {
     if (repeatString === "daily") {
       return "Daily";
     }
-    
+
     const dayLabels: Record<string, string> = {
       mo: "Mon",
       tu: "Tue",
@@ -152,14 +266,14 @@ export default function Automations() {
       sa: "Sat",
       su: "Sun",
     };
-    
+
     let selectedDayLabels = [];
     for (const [code, label] of Object.entries(dayLabels)) {
       if (repeatString.includes(code)) {
         selectedDayLabels.push(label);
       }
     }
-    
+
     return selectedDayLabels.join(", ");
   };
 
@@ -168,16 +282,19 @@ export default function Automations() {
       <Text className="text-xl">Automations</Text>
       <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
         {alarms.map((alarm) => (
-          // In the alarmRow component, adjust the widths
           <View key={alarm.name} style={styles.alarmRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.nameText}>{alarm.name}</Text>
             </View>
             <View style={{ width: 50, alignItems: "center" }}>
-              <Text style={styles.timeText}>{alarm.time}</Text>
+              <Text style={styles.timeText}>{alarm.time} </Text>
             </View>
-            <View style={{ width: 90, alignItems: "flex-start" }}>
-              <Text numberOfLines={1} ellipsizeMode="tail" style={styles.repeatText}>
+            <View style={{ flex: 1 }}>
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={styles.repeatText}
+              >
                 {formatRepeat(alarm.repeat)}
               </Text>
             </View>
@@ -189,7 +306,10 @@ export default function Automations() {
                 trackColor={{ false: "darkred", true: "green" }}
                 style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
               />
-              <TouchableOpacity onPress={() => handleDelete(alarm)} style={{ marginLeft: 2 }}>
+              <TouchableOpacity
+                onPress={() => handleDelete(alarm)}
+                style={{ marginLeft: 2 }}
+              >
                 <Ionicons name="trash" size={18} color="red" />
               </TouchableOpacity>
             </View>
@@ -197,211 +317,125 @@ export default function Automations() {
         ))}
       </ScrollView>
 
-      {/* Improved Modal for Adding a New Alarm */}
+      {/* Updated Modal for Adding a New Alarm */}
       <Modal
+        onRequestClose={() => setModalVisible(false)}
         visible={modalVisible}
         animationType="fade"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
+        transparent
       >
-        <SafeAreaView style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              <Text className="text-xl mb-4">Add New Alarm</Text>
-              <Text>Name:</Text>
-              <TextInput
-                value={newAlarmName}
-                onChangeText={setNewAlarmName}
-                placeholder="Enter alarm name"
-                style={styles.input}
-              />
-              <Text>Action:</Text>
-              <Picker
-                selectedValue={newAlarmAction}
-                onValueChange={(itemValue) => setNewAlarmAction(itemValue)}
-                style={styles.picker}
-              >
-                {actionsList.map((action) => (
-                  <Picker.Item key={action} label={action} value={action} />
-                ))}
-              </Picker>
-              <Text>Time: {newAlarmTime}</Text>
-              <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.timeButton}>
-                <Text style={styles.buttonText}>Select Time</Text>
-              </TouchableOpacity>
-              {showTimePicker && (
-                <DateTimePicker
-                  value={new Date()}
-                  mode="time"
-                  display="default"
-                  onChange={onTimeChange}
+        <GestureHandlerRootView>
+          <Pressable
+            style={styles.modalContainer}
+            onPress={() => setModalVisible(false)}
+          >
+            <View style={styles.contentContainer}>
+              <ScrollView contentContainerStyle={styles.modalContent}>
+                <Text className="text-xl mb-4">Add New Alarm</Text>
+                <Text>Name:</Text>
+                <TextInput
+                  value={newAlarmName}
+                  onChangeText={setNewAlarmName}
+                  placeholder="Enter alarm name"
+                  style={styles.input}
+                  placeholderTextColor={Colors[colorScheme ?? "light"].disabled}
                 />
-              )}
-              <Text>Repeat:</Text>
-              <View style={styles.repeatContainer}>
-                <TouchableOpacity
-                  onPress={() => setRepeatMode("daily")}
-                  style={[
-                    styles.repeatButton,
-                    { backgroundColor: repeatMode === "daily" ? Colors[colorScheme ?? "light"].tint : "#ccc" },
-                  ]}
+                <Text>Action:</Text>
+                <Picker
+                  selectedValue={newAlarmAction}
+                  onValueChange={(itemValue) => setNewAlarmAction(itemValue)}
+                  style={styles.picker}
                 >
-                  <Text style={styles.buttonText}>Daily </Text>
-                </TouchableOpacity>
+                  {actionsList.map((action) => (
+                    <Picker.Item
+                      key={action}
+                      label={action}
+                      value={action}
+                    />
+                  ))}
+                </Picker>
+                <Text>Time: {newAlarmTime}</Text>
                 <TouchableOpacity
-                  onPress={() => setRepeatMode("custom")}
-                  style={[
-                    styles.repeatButton,
-                    { backgroundColor: repeatMode === "custom" ? Colors[colorScheme ?? "light"].tint : "#ccc" },
-                  ]}
+                  onPress={() => setShowTimePicker(true)}
+                  style={styles.timeButton}
                 >
-                  <Text style={styles.buttonText}>Custom</Text>
+                  <Text style={styles.buttonText}>Select Time</Text>
                 </TouchableOpacity>
-              </View>
-              {repeatMode === "custom" && (
-                <View style={styles.daysContainer}>
-                  {daysOfWeek.map((day) => (
-                    <TouchableOpacity
-                      key={day.code}
-                      onPress={() => toggleDay(day.code)}
-                      style={[
-                        styles.dayButton,
-                        {
-                          backgroundColor: selectedDays.includes(day.code)
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={new Date()}
+                    mode="time"
+                    display="default"
+                    onChange={onTimeChange}
+                  />
+                )}
+                <Text>Repeat:</Text>
+                <View style={styles.repeatContainer}>
+                  <TouchableOpacity
+                    onPress={() => setRepeatMode("daily")}
+                    style={[
+                      styles.repeatButton,
+                      {
+                        backgroundColor:
+                          repeatMode === "daily"
                             ? Colors[colorScheme ?? "light"].tint
                             : "#ccc",
-                        },
-                      ]}
-                    >
-                      <Text style={styles.dayButtonText}>{day.label}</Text>
-                    </TouchableOpacity>
-                  ))}
+                      },
+                    ]}
+                  >
+                    <Text style={styles.buttonText}>Daily</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setRepeatMode("custom")}
+                    style={[
+                      styles.repeatButton,
+                      {
+                        backgroundColor:
+                          repeatMode === "custom"
+                            ? Colors[colorScheme ?? "light"].tint
+                            : "#ccc",
+                      },
+                    ]}
+                  >
+                    <Text style={styles.buttonText}>Custom</Text>
+                  </TouchableOpacity>
                 </View>
-              )}
-              <View style={styles.modalActions}>
-                <Button title="Cancel" onPress={() => setModalVisible(false)} />
-                <Button title="Save" onPress={handleSave} />
-              </View>
-            </ScrollView>
-          </View>
-        </SafeAreaView>
+                {repeatMode === "custom" && (
+                  <View style={styles.daysContainer}>
+                    {daysOfWeek.map((day) => (
+                      <TouchableOpacity
+                        key={day.code}
+                        onPress={() => toggleDay(day.code)}
+                        style={[
+                          styles.dayButton,
+                          {
+                            backgroundColor: selectedDays.includes(day.code)
+                              ? Colors[colorScheme ?? "light"].tint
+                              : "#ccc",
+                          },
+                        ]}
+                      >
+                        <Text style={styles.dayButtonText}>{day.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                <View style={styles.modalActions}>
+                  <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                  <Button title="Save" onPress={handleSave} />
+                </View>
+              </ScrollView>
+            </View>
+          </Pressable>
+        </GestureHandlerRootView>
       </Modal>
 
-      <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.fab}>
+      <TouchableOpacity
+        onPress={() => setModalVisible(true)}
+        style={styles.fab}
+      >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  alarmRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
-    paddingVertical: 6, // Reduced from 10
-    paddingHorizontal: 0, // Reduced from 5
-  },
-  nameText: {
-    fontSize: 14, // Smaller text size
-  },
-  timeText: {
-    fontSize: 13, // Smaller text size
-  },
-  repeatText: {
-    fontSize: 11, // Even smaller
-    color: "#fff",
-  },
-  actionContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 0, // Add slight padding
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 5,
-  },
-  modalContainer: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    width: "100%",
-    maxHeight: "90%",
-    padding: 20,
-  },
-  modalContent: {
-    paddingBottom: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 8,
-    marginBottom: 10,
-  },
-  picker: {
-    height: 50,
-    marginBottom: 10,
-  },
-  timeButton: {
-    backgroundColor: "#007AFF",
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 10,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "white",
-  },
-  repeatContainer: {
-    flexDirection: "row",
-    marginBottom: 10,
-    alignItems: "center",
-  },
-  repeatButton: {
-    padding: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  daysContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  dayButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    margin: 5,
-  },
-  dayButtonText: {
-    color: "white",
-    fontSize: 12,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  fab: {
-    position: "absolute",
-    bottom: 40,
-    left: 1,
-    backgroundColor: Colors["light"].tint,
-    width: 60,
-    height: 60,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-  },
-});

@@ -11,33 +11,37 @@ import {
   StyleSheet,
 } from "react-native";
 import Slider from '@react-native-community/slider';
-import ColorPicker, { Panel1, Panel2, Panel3, Swatches, Preview, OpacitySlider, HueSlider, BrightnessSlider, colorKit } from 'reanimated-color-picker';
+import ColorPicker, { Panel3, Swatches, Preview, BrightnessSlider, colorKit } from 'reanimated-color-picker';
+import { Picker } from "@react-native-picker/picker";
 import { Colors } from "@/constants/Colors";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useColorScheme } from "nativewind";
-import { GestureHandlerRootView, Pressable, TouchableWithoutFeedback } from "react-native-gesture-handler";
+import { GestureHandlerRootView, Pressable } from "react-native-gesture-handler";
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
 
 export default function ControlsScreen() {
   const [psuOn, setPsuOn] = useState<boolean>(false);
   const [showColorModal, setShowColorModal] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#ffffff");
+
+  // New state for LED Mode Picker
+  const [showLedPicker, setShowLedPicker] = useState(false);
+  const [selectedLedMode, setSelectedLedMode] = useState<string>("alarm");
+
   const { colorScheme } = useColorScheme();
   
   // Fetch PSU status when the component is focused
   useFocusEffect(
-      useCallback(() => {
-        async function fetchPSUStatus() {
-          const status = await getPSUStatus();
-          if (status !== null) {
-            setPsuOn(status);
-          }
+    useCallback(() => {
+      async function fetchPSUStatus() {
+        const status = await getPSUStatus();
+        if (status !== null) {
+          setPsuOn(status);
         }
-    
-        fetchPSUStatus();
-      }, [])
-    );
+      }
+      fetchPSUStatus();
+    }, [])
+  );
   
   const [pcVolume, setPcVolume] = useState<number>(0.3);
   const [isAdjusting, setIsAdjusting] = useState<boolean>(false);
@@ -51,21 +55,19 @@ export default function ControlsScreen() {
           setPcVolume(volume);
         }
       }
-    }, 1000); // Fetch every second
-
-    return () => clearInterval(interval); // Cleanup interval on unmount
+    }, 1000);
+    return () => clearInterval(interval);
   }, [isAdjusting]);
 
   const handleVolumeChange = async (value: number) => {
     setPcVolume(value);
-    await setVolume(value); // Update volume in backend or device
+    await setVolume(value);
   };
 
   const handlePSUchange = async () => {
-    const updatedStatus = await setPSU(!psuOn); // Toggle PSU status via API
-    setPsuOn(updatedStatus); // Update state based on API success
+    const updatedStatus = await setPSU(!psuOn);
+    setPsuOn(updatedStatus);
   };
-
 
   const styles = StyleSheet.create({
     modalContainer: {
@@ -76,15 +78,13 @@ export default function ControlsScreen() {
     },
     contentContainer: {
       width: '80%',
-      height: '72%',
-      backgroundColor: Colors[colorScheme ?? "light"].background,
+      backgroundColor: "gray",
       borderRadius: 12,
       borderColor: Colors[colorScheme ?? "light"].text,
       borderWidth: 2,
       padding: 20,
     },
     componentMargin: {
-      justifyContent: 'center',
       marginVertical: 8,
       marginHorizontal: 2,
     },
@@ -94,9 +94,10 @@ export default function ControlsScreen() {
     setShowColorModal(true);
   }
 
-  async function moreLED() {
-    // modal for sunrise, sunset and alarm
-  }
+  // Instead of using Alert.alert with invalid syntax, we simply open the modal
+  const moreLED = () => {
+    setShowLedPicker(true);
+  };
 
   return (
     <>
@@ -107,7 +108,7 @@ export default function ControlsScreen() {
           <Button className="w-32 h-24" title="DISMISS ALARM" onPress={dismissAlarm} />
           <Button className="mr-0 w-32 h-24" onPress={handlePSUchange}>
             <SafeAreaView className="flex-row items-center">
-              <Text className="px-5" style={{ color: "white" }} >PSU </Text>
+              <Text className="px-5" style={{ color: "white" }}>PSU </Text>
               <Switch
                 className="mr-3"
                 thumbColor={"white"}
@@ -137,6 +138,7 @@ export default function ControlsScreen() {
             onSlidingComplete={(value) => {
               handleVolumeChange(value);
               Vibration.vibrate(10);
+              setIsAdjusting(false);
             }}
             value={pcVolume}
           />
@@ -159,31 +161,9 @@ export default function ControlsScreen() {
           <Button className="w-32 h-24" title="WARM WHITE" onPress={() => setLED("WARM_WHITE")} />
           <Button className="mr-0 w-32 h-24" title="COLD WHITE " onPress={() => setLED("COLD_WHITE")} />
         </SafeAreaView>
-        {/*
-        <Text className="font-bold mt-2 mb-1">Brightness</Text>
-        <Slider
-          style={{ flex: 1, marginTop: 10 }}
-          thumbTintColor={Colors[colorScheme ?? "light"].tint}
-          minimumValue={0}
-          maximumValue={1}
-          minimumTrackTintColor="#FFFFFF"
-          maximumTrackTintColor="#FFFFFF"
-          onSlidingStart={() => Vibration.vibrate(10)}
-          onSlidingComplete={() => Vibration.vibrate(10)}
-        />
-        <Text className="font-bold mt-3 mb-1">Hue</Text>
-        <Slider
-          style={{ flex: 1, marginTop: 10 }}
-          thumbTintColor={Colors[colorScheme ?? "light"].tint}
-          minimumValue={0}
-          maximumValue={1}
-          minimumTrackTintColor="#FFFFFF"
-          maximumTrackTintColor="#FFFFFF"
-          onSlidingStart={() => Vibration.vibrate(10)}
-          onSlidingComplete={() => Vibration.vibrate(10)}
-        />
-        */}
       </View>
+      
+      {/* Modal for Custom LED Color */}
       <Modal onRequestClose={() => setShowColorModal(false)} visible={showColorModal} animationType="fade" transparent>
         <GestureHandlerRootView>
           <Pressable style={styles.modalContainer} onPress={() => setShowColorModal(false)}>
@@ -205,6 +185,35 @@ export default function ControlsScreen() {
               </ColorPicker>
             </NativeView>
           </Pressable>
+        </GestureHandlerRootView>
+      </Modal>
+      
+      {/* Modal for LED Mode Picker */}
+      <Modal
+        visible={showLedPicker}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowLedPicker(false)}
+      >
+        <GestureHandlerRootView style={styles.modalContainer}>
+          <NativeView style={styles.contentContainer}>
+            <Text className="text-xl font-bold">Select LED Mode</Text>
+            <Picker
+              selectedValue={selectedLedMode}
+              style={{ height: 150, width: "100%" }}
+              onValueChange={async (itemValue) => {
+                setSelectedLedMode(itemValue);
+                await setLED(itemValue);
+                setShowLedPicker(false);
+              }}
+              
+            >
+              <Picker.Item label="Alarm" value="ALARM" color={Colors["light"].text} />
+              <Picker.Item label="Sunrise" value="SUNRISE" color={Colors["light"].text} />
+              <Picker.Item label="Sunset" value="SUNSET" color={Colors["light"].text} />
+            </Picker>
+            <Button title="Cancel" onPress={() => setShowLedPicker(false)} />
+          </NativeView>
         </GestureHandlerRootView>
       </Modal>
     </>
