@@ -1,4 +1,14 @@
-import { dismissAlarm, getPSUStatus, getVolume, setVolume, setLED, setPSU, wakePC } from "@/services/api";
+import { 
+  dismissAlarm, 
+  getPSUStatus, 
+  getVolume, 
+  setVolume, 
+  setLED, 
+  setPSU, 
+  wakePC,
+  getDim,       // Added import for brightness
+  setDim        // Added import for brightness
+} from "@/services/api";
 import Text from "@/components/Text";
 import View from "@/components/View";
 import Button from "@/components/Button";
@@ -44,12 +54,12 @@ export default function ControlsScreen() {
   );
   
   const [pcVolume, setPcVolume] = useState<number>(0.3);
-  const [isAdjusting, setIsAdjusting] = useState<boolean>(false);
+  const [isVolAdjusting, setIsvolAdjusting] = useState<boolean>(false);
 
   // Fetch volume every second, but don't override if user is adjusting
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (!isAdjusting) {
+      if (!isVolAdjusting) {
         const volume = await getVolume();
         if (volume !== null) {
           setPcVolume(volume);
@@ -57,12 +67,36 @@ export default function ControlsScreen() {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [isAdjusting]);
+  }, [isVolAdjusting]);
 
   const handleVolumeChange = async (value: number) => {
     setPcVolume(value);
     await setVolume(value);
   };
+
+  // Brightness state and fetching logic
+  const [brightness, setBrightness] = useState(1);
+  const [isBrightnessAdjusting, setIsBrightnessAdjusting] = useState<boolean>(false);
+
+  // Fetch brightness every second, but don't override if the user is adjusting
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!isBrightnessAdjusting) {
+        const currentBrightness = await getDim();
+        if (currentBrightness !== null) {
+          setBrightness(currentBrightness);
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isBrightnessAdjusting]);
+
+  // Single brightness change function similar to the volume logic
+  const handleBrightnessChange = async (value: number) => {
+    setBrightness(value);
+    await setDim(value);
+  };
+
 
   const handlePSUchange = async () => {
     const updatedStatus = await setPSU(!psuOn);
@@ -132,13 +166,13 @@ export default function ControlsScreen() {
             minimumTrackTintColor="#FFFFFF"
             maximumTrackTintColor="#FFFFFF"
             onSlidingStart={() => {
-              setIsAdjusting(true);
+              setIsvolAdjusting(true);
               Vibration.vibrate(10);
             }}
             onSlidingComplete={(value) => {
               handleVolumeChange(value);
               Vibration.vibrate(10);
-              setIsAdjusting(false);
+              setIsvolAdjusting(false);
             }}
             value={pcVolume}
           />
@@ -161,6 +195,40 @@ export default function ControlsScreen() {
           <Button className="w-32 h-24" title="WARM WHITE" onPress={() => setLED("WARM_WHITE")} />
           <Button className="mr-0 w-32 h-24" title="COLD WHITE " onPress={() => setLED("COLD_WHITE")} />
         </SafeAreaView>
+        
+        <Text className="font-bold mt-2 mb-1">Brightness</Text>
+        <Slider
+          style={{ flex: 1, marginTop: 10 }}
+          thumbTintColor={Colors[colorScheme ?? "light"].tint}
+          value={brightness}
+          minimumValue={0}
+          maximumValue={1}
+          minimumTrackTintColor="#FFFFFF"
+          maximumTrackTintColor="#FFFFFF"
+          onSlidingStart={() => {
+            setIsBrightnessAdjusting(true);
+            Vibration.vibrate(10);
+          }}
+          onSlidingComplete={ (value) => {
+            handleBrightnessChange(value);
+            Vibration.vibrate(10);
+            setIsBrightnessAdjusting(false);
+          }}
+        />
+
+        <Text className="font-bold mt-3 mb-1">Hue</Text>
+        <Slider
+          style={{ flex: 1, marginTop: 10 }}
+          thumbTintColor={Colors[colorScheme ?? "light"].tint}
+          //value={hue}
+          minimumValue={0}
+          maximumValue={1}
+          minimumTrackTintColor="#FFFFFF"
+          maximumTrackTintColor="#FFFFFF"
+          onSlidingStart={() => Vibration.vibrate(10)}
+          onSlidingComplete={() => Vibration.vibrate(10)}
+        />
+        
       </View>
       
       {/* Modal for Custom LED Color */}
@@ -206,13 +274,12 @@ export default function ControlsScreen() {
                 await setLED(itemValue);
                 setShowLedPicker(false);
               }}
-              
             >
               <Picker.Item label="Alarm" value="ALARM" color={Colors["light"].text} />
               <Picker.Item label="Sunrise" value="SUNRISE" color={Colors["light"].text} />
               <Picker.Item label="Sunset" value="SUNSET" color={Colors["light"].text} />
             </Picker>
-            <Button title="Cancel" onPress={() => setShowLedPicker(false)} />
+            <Button title="Cancel " onPress={() => setShowLedPicker(false)} />
           </NativeView>
         </GestureHandlerRootView>
       </Modal>

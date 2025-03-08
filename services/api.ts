@@ -469,3 +469,72 @@ export async function getAlarmActions(): Promise<string[]> {
     return [];
   }
 }
+
+export async function getDim(): Promise<number | null> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/dim`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get dim: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.dim;
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in getDim:", errorMessage);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: errorMessage,
+    });
+    return null;
+  }
+}
+
+export async function setDim(dim: number): Promise<void> {
+  try {
+    const config = await getAPIconfig();
+    if (!config) {
+      throw new Error("API configuration not found");
+    }
+
+    const response = await fetch(`${config.API_BASE_URL}/dim`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        token: config.API_TOKEN,
+      },
+      body: JSON.stringify({ dim }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to set dim: ${response.statusText}`);
+    }
+
+    Toast.show({
+      type: "success",
+      text1: "Success",
+      text2: `Dim set to ${dim}!`,
+    });
+  } catch (error) {
+    const errorMessage = (error as Error).message || "An unexpected error occurred";
+    console.error("Error in setDim:", errorMessage);
+    Toast.show({
+      type: "error",
+      text1: "Error",
+      text2: errorMessage,
+    });
+  }
+}
