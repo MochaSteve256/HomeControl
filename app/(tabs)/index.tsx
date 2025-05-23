@@ -19,6 +19,7 @@ import {
   Modal,
   View as NativeView,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import Slider from '@react-native-community/slider';
 import ColorPicker, { Panel3, Swatches, Preview, BrightnessSlider, colorKit } from 'reanimated-color-picker';
@@ -111,16 +112,23 @@ export default function ControlsScreen() {
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     contentContainer: {
-      width: '80%',
       backgroundColor: "gray",
       borderRadius: 12,
       borderColor: Colors[colorScheme ?? "light"].text,
       borderWidth: 2,
       padding: 20,
+      width: Dimensions.get('window').width > 768 ? '40%' : '80%', // Adjust width based on screen size
     },
     componentMargin: {
       marginVertical: 8,
       marginHorizontal: 2,
+    },
+    backdrop: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
     },
   });
 
@@ -159,12 +167,12 @@ export default function ControlsScreen() {
         <Text className="text-lg font-bold">PC Volume</Text>
         <SafeAreaView className="flex-row space-x-4 mt-1 mb-3">
           <Slider
-            style={{ flex: 1, marginTop: 10 }}
+            style={{ marginTop: 10, ...(Dimensions.get('window').width > 768 ? { width: 456 } : {}) }}
             thumbTintColor={Colors[colorScheme ?? "light"].tint}
             minimumValue={0}
             maximumValue={1}
-            minimumTrackTintColor="#FFFFFF"
-            maximumTrackTintColor="#FFFFFF"
+            minimumTrackTintColor={Colors[colorScheme ?? "light"].text}
+            maximumTrackTintColor={Colors[colorScheme ?? "light"].disabled}
             onSlidingStart={() => {
               setIsvolAdjusting(true);
               Vibration.vibrate(10);
@@ -198,13 +206,13 @@ export default function ControlsScreen() {
         
         <Text className="font-bold mt-2 mb-1">Brightness</Text>
         <Slider
-          style={{ flex: 1, marginTop: 10 }}
+          style={{ marginTop: 10, ...(Dimensions.get('window').width > 768 ? { width: 456 } : {}) }}
           thumbTintColor={Colors[colorScheme ?? "light"].tint}
           value={brightness}
           minimumValue={0}
           maximumValue={1}
-          minimumTrackTintColor="#FFFFFF"
-          maximumTrackTintColor="#FFFFFF"
+          minimumTrackTintColor={Colors[colorScheme ?? "light"].text}
+          maximumTrackTintColor={Colors[colorScheme ?? "light"].disabled}
           onSlidingStart={() => {
             setIsBrightnessAdjusting(true);
             Vibration.vibrate(10);
@@ -216,6 +224,7 @@ export default function ControlsScreen() {
           }}
         />
 
+        {/*
         <Text className="font-bold mt-3 mb-1">Hue</Text>
         <Slider
           style={{ flex: 1, marginTop: 10 }}
@@ -228,31 +237,32 @@ export default function ControlsScreen() {
           onSlidingStart={() => Vibration.vibrate(10)}
           onSlidingComplete={() => Vibration.vibrate(10)}
         />
+        */}
         
       </View>
       
       {/* Modal for Custom LED Color */}
       <Modal onRequestClose={() => setShowColorModal(false)} visible={showColorModal} animationType="fade" transparent>
-        <GestureHandlerRootView>
-          <Pressable style={styles.modalContainer} onPress={() => setShowColorModal(false)}>
-            <NativeView style={styles.contentContainer}>
-              <ColorPicker
-                style={{ width: '100%' }}
-                value={selectedColor}
-                onComplete={({ hex }) => {
-                  const [r, g, b] = colorKit.RGB(hex).array();
-                  setLED("CUSTOM", [r, g, b]);
-                  setSelectedColor(hex);
-                }}
-              >
-                <Preview style={styles.componentMargin} />
-                <Panel3 style={styles.componentMargin} />
-                <BrightnessSlider style={styles.componentMargin} />
-                <Swatches style={styles.componentMargin} />
-                <Button title="Done" onPress={() => setShowColorModal(false)} />
-              </ColorPicker>
-            </NativeView>
-          </Pressable>
+        <GestureHandlerRootView style={styles.modalContainer}>
+          <Pressable style={styles.backdrop} onPress={() => setShowColorModal(false)} />
+          <NativeView style={styles.contentContainer}>
+            <ColorPicker
+              style={{ width: "100%" }}
+              value={selectedColor}
+              onComplete={({ hex }) => {
+                const [r, g, b] = colorKit.RGB(hex).array();
+                setLED("CUSTOM", [r, g, b]);
+                setSelectedColor(hex);
+              }}
+            >
+              <Preview style={styles.componentMargin} />
+              <Panel3 style={styles.componentMargin} />
+              <BrightnessSlider style={styles.componentMargin} />
+              <Swatches style={styles.componentMargin} />
+              <Button title="Close" onPress={() => {setShowColorModal(false) }} />
+            </ColorPicker>
+          </NativeView>
+
         </GestureHandlerRootView>
       </Modal>
       
@@ -264,22 +274,23 @@ export default function ControlsScreen() {
         onRequestClose={() => setShowLedPicker(false)}
       >
         <GestureHandlerRootView style={styles.modalContainer}>
+          <Pressable style={styles.backdrop} onPress={() => setShowLedPicker(false)}/>
           <NativeView style={styles.contentContainer}>
-            <Text className="text-xl font-bold">Select LED Mode</Text>
-            <Picker
-              selectedValue={selectedLedMode}
-              style={{ height: 150, width: "100%" }}
-              onValueChange={async (itemValue) => {
-                setSelectedLedMode(itemValue);
-                await setLED(itemValue);
-                setShowLedPicker(false);
-              }}
-            >
-              <Picker.Item label="Alarm" value="ALARM" color={Colors["light"].text} />
-              <Picker.Item label="Sunrise" value="SUNRISE" color={Colors["light"].text} />
-              <Picker.Item label="Sunset" value="SUNSET" color={Colors["light"].text} />
-            </Picker>
-            <Button title="Cancel " onPress={() => setShowLedPicker(false)} />
+              <Text className="text-xl font-bold">Select LED Mode</Text>
+              <Picker
+                selectedValue={selectedLedMode}
+                style={{ height: 150, width: "100%" }}
+                onValueChange={async (itemValue) => {
+                  setSelectedLedMode(itemValue);
+                  await setLED(itemValue);
+                  setShowLedPicker(false);
+                }}
+              >
+                <Picker.Item label="Alarm" value="ALARM" color={Colors["light"].text} />
+                <Picker.Item label="Sunrise" value="SUNRISE" color={Colors["light"].text} />
+                <Picker.Item label="Sunset" value="SUNSET" color={Colors["light"].text} />
+              </Picker>
+              <Button title="Cancel " onPress={() => setShowLedPicker(false)} />
           </NativeView>
         </GestureHandlerRootView>
       </Modal>
