@@ -165,9 +165,9 @@ export default function ControlsScreen() {
           </Button>
         </SafeAreaView>
         <Text className="text-lg font-bold">PC Volume</Text>
-        <SafeAreaView className="flex-row space-x-4 mt-1 mb-3">
+        <SafeAreaView className="flex-row mt-1 mb-3">
           <Slider
-            style={{ marginTop: 10, ...(Dimensions.get('window').width > 768 ? { width: 456 } : {}) }}
+            style={{ marginTop: 10, ...(Dimensions.get('window').width > 768 ? { width: 456 } : { flex: 1}) }}
             thumbTintColor={Colors[colorScheme ?? "light"].tint}
             minimumValue={0}
             maximumValue={1}
