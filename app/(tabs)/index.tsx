@@ -10,6 +10,7 @@ import {
   setDim        // Added import for brightness
 } from "@/services/api";
 import Text from "@/components/Text";
+import ScrollView from "@/components/ScrollView";
 import View from "@/components/View";
 import Button from "@/components/Button";
 import {
@@ -143,7 +144,7 @@ export default function ControlsScreen() {
 
   return (
     <>
-      <View>
+      <ScrollView>
         <Text className="text-2xl font-bold">Misc.</Text>
         <SafeAreaView className="flex-row space-x-4">
           <Button className="ml-0 w-32 h-24" title=" START PC " onPress={wakePC} />
@@ -239,7 +240,9 @@ export default function ControlsScreen() {
         />
         */}
         
-      </View>
+        <View style={{ height: 10 }} />
+
+      </ScrollView>
       
       {/* Modal for Custom LED Color */}
       <Modal onRequestClose={() => setShowColorModal(false)} visible={showColorModal} animationType="fade" transparent>
