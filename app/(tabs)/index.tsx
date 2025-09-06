@@ -17,7 +17,7 @@ import { Colors } from "@/constants/Colors";
 
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
-import Slider from '@react-native-community/slider';
+import { Slider } from '@miblanchard/react-native-slider';
 import { useColorScheme } from "nativewind";
 import {
   Vibration,
@@ -61,30 +61,30 @@ export default function PCControls() {
         <ScrollView>
         <Text className="text-2xl font-bold dark:text-white">PC Controls</Text>
           <Text className="text-xl font-bold dark:text-white">Power</Text>
-          <SafeAreaView className="flex-row gap-2">
+          <SafeAreaView className="flex-row">
             <Button className="ml-0 w-32 h-24" title="START PC" onPress={wakePC} />
-            <Button className="ml-0 w-32 h-24" title="LOCK SCREEN" onPress={lockScreen} />
-            <Button className="ml-0 w-32 h-24" title="SHUTDOWN PC" onPress={shutdownPC} />
+            <Button className="w-32 h-24" title="LOCK SCREEN" onPress={lockScreen} />
+            <Button className="mr-0 w-32 h-24" title="SHUTDOWN PC" onPress={shutdownPC} />
           </SafeAreaView>
 
           <Text className="text-xl font-bold dark:text-white">Music</Text>
-          <SafeAreaView className="flex-row gap-2">
+          <SafeAreaView className="flex-row">
             <Button className="ml-0 w-32 h-24" onPress={previousTrack}>
               <Ionicons name="play-back" size={24} color="white" />
             </Button>
-            <Button className="ml-0 w-32 h-24" onPress= {playPauseMusic}>
+            <Button className="w-32 h-24" onPress= {playPauseMusic}>
               <SafeAreaView className="flex-row items-center">
                 <Ionicons name="play" size={24} color="white" />
                 <Ionicons name="pause" size={24} color="white" />
               </SafeAreaView>
             </Button>
-            <Button className="ml-0 w-32 h-24" onPress={nextTrack}>
+            <Button className="mr-0 w-32 h-24" onPress={nextTrack}>
               <Ionicons name="play-forward" size={24} color="white" />
             </Button>
           </SafeAreaView>
             <Text className="text-xl font-bold dark:text-white">Volume</Text>
             <Slider
-              style={{ marginLeft: 0, marginTop: 10, ...(Dimensions.get('window').width > 768 ? { width: 456 } : { flex: 1}) }}
+              containerStyle={{ marginLeft: 0, marginTop: 10, ...(Dimensions.get('window').width > 768 ? { width: 420 } : { flex: 1}) }}
               thumbTintColor={Colors[colorScheme ?? "light"].tint}
               minimumValue={0}
               maximumValue={1}
@@ -94,7 +94,8 @@ export default function PCControls() {
                 setIsvolAdjusting(true);
                 Vibration.vibrate(10);
               }}
-              onSlidingComplete={(value) => {
+              onSlidingComplete={(valueArray) => {
+                const value = Array.isArray(valueArray) ? valueArray[0] : valueArray;
                 handleVolumeChange(value);
                 Vibration.vibrate(10);
                 setIsvolAdjusting(false);

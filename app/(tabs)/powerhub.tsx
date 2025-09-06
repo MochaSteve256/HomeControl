@@ -19,7 +19,8 @@ import {
     StyleSheet,
     Dimensions,
   } from "react-native";
-  import Slider from '@react-native-community/slider';
+  import { Slider } from '@miblanchard/react-native-slider';
+
   import ColorPicker, { Panel3, Swatches, Preview, BrightnessSlider, colorKit } from 'reanimated-color-picker';
   import { Picker } from "@react-native-picker/picker";
   import { Colors } from "@/constants/Colors";
@@ -125,7 +126,7 @@ import {
         <ScrollView>
           <Text className="text-2xl font-bold">Misc.</Text>
           <SafeAreaView className="flex-row space-x-4">
-            <Button className="mr-0 w-32 h-24" onPress={handlePSUchange}>
+            <Button className="ml-0 w-32 h-24" onPress={handlePSUchange}>
               <SafeAreaView className="flex-row items-center">
                 <Text className="px-5" style={{ color: "white" }}>PSU </Text>
                 <Switch
@@ -140,7 +141,7 @@ import {
                 />
               </SafeAreaView>
             </Button>
-            <Button className="ml-0 w-32 h-24" title="DISMISS ALARM" onPress={dismissAlarm} />
+            <Button className="mr-0 w-32 h-24" title="DISMISS ALARM" onPress={dismissAlarm} />
           </SafeAreaView>
           <Text className="text-2xl font-bold">LED Control</Text>
           <Text className="text-lg font-bold">Misc.</Text>
@@ -163,7 +164,7 @@ import {
           
           <Text className="font-bold mt-2 mb-1">Brightness</Text>
           <Slider
-            style={{ marginTop: 10, ...(Dimensions.get('window').width > 768 ? { width: 456 } : {}) }}
+            containerStyle={{ marginTop: 10, ...(Dimensions.get('window').width > 768 ? { width: 456 } : {}) }}
             thumbTintColor={Colors[colorScheme ?? "light"].tint}
             value={brightness}
             minimumValue={0}
@@ -174,7 +175,8 @@ import {
               setIsBrightnessAdjusting(true);
               Vibration.vibrate(10);
             }}
-            onSlidingComplete={ (value) => {
+            onSlidingComplete={ (valueArray) => {
+              const value = Array.isArray(valueArray) ? valueArray[0] : valueArray;
               handleBrightnessChange(value);
               Vibration.vibrate(10);
               setIsBrightnessAdjusting(false);
