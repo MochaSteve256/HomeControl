@@ -62,7 +62,7 @@ export default function PCControls() {
         <Text className="text-2xl font-bold dark:text-white">PC Controls</Text>
           <Text className="text-xl font-bold dark:text-white">Power</Text>
           <SafeAreaView className="flex-row">
-            <Button className="ml-0 w-32 h-24" title="START PC" onPress={wakePC} />
+            <Button className="ml-0 w-32 h-24" title="START PC " onPress={wakePC} />
             <Button className="w-32 h-24" title="LOCK SCREEN" onPress={lockScreen} />
             <Button className="mr-0 w-32 h-24" title="SHUTDOWN PC" onPress={shutdownPC} />
           </SafeAreaView>
