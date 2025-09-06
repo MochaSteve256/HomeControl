@@ -201,7 +201,7 @@ export default function Automations() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            await removeAlarm(alarm.name);
+            await removeAlarm(alarm.id!);
             setAlarms((prev) => prev.filter((a) => a.name !== alarm.name));
           },
         },

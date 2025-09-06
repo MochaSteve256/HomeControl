@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Platform } from "react-native";
+//import { Platform } from "react-native";
 import { useColorScheme } from "nativewind";
 
 import { Colors } from "@/constants/Colors";
@@ -28,11 +28,25 @@ export default function TabLayout() {
           name="index"
           options={{
             headerShown: false,
-            title: "Controls",
+            title: "PC Controls",
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
                 size={28}
                 name={focused ? "options-sharp" : "options-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="powerhub"
+          options={{
+            headerShown: false,
+            title: "PowerHub",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={28}
+                name={focused ? "power-sharp" : "power-outline"}
                 color={color}
               />
             ),
