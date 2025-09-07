@@ -22,6 +22,7 @@ import {
   getAlarms,
   createAlarm,
   updateAlarmStatus,
+  updateAlarm,
   removeAlarm,
   getAlarmActions,
 } from "@/services/api";
@@ -34,9 +35,13 @@ export default function Automations() {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [actionsList, setActionsList] = useState<string[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [newAlarmName, setNewAlarmName] = useState("");
-  const [newAlarmAction, setNewAlarmAction] = useState("psu_on");
-  const [newAlarmTime, setNewAlarmTime] = useState("07:00");
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
+  
+  // Form states - shared between add and edit modals
+  const [formName, setFormName] = useState("");
+  const [formAction, setFormAction] = useState("psu_on");
+  const [formTime, setFormTime] = useState("07:00");
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [repeatMode, setRepeatMode] = useState<"daily" | "custom">("daily");
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -68,14 +73,65 @@ export default function Automations() {
     fetchActions();
   }, []);
 
+  // Reset form to default values
+  const resetForm = () => {
+    setFormName("");
+    setFormAction("psu_on");
+    setFormTime("07:00");
+    setRepeatMode("daily");
+    setSelectedDays([]);
+  };
+
+  // Populate form with alarm data for editing
+  const populateFormForEdit = (alarm: Alarm) => {
+    setFormName(alarm.name);
+    setFormAction(alarm.action);
+    setFormTime(alarm.time);
+    
+    if (alarm.repeat === "daily") {
+      setRepeatMode("daily");
+      setSelectedDays([]);
+    } else {
+      setRepeatMode("custom");
+      // Parse the repeat string to extract selected days
+      const days = [];
+      for (const day of daysOfWeek) {
+        if (alarm.repeat.includes(day.code)) {
+          days.push(day.code);
+        }
+      }
+      setSelectedDays(days);
+    }
+  };
+
+  // Open add modal
+  const openAddModal = () => {
+    resetForm();
+    setModalVisible(true);
+  };
+
+  // Open edit modal
+  const openEditModal = (alarm: Alarm) => {
+    setEditingAlarm(alarm);
+    populateFormForEdit(alarm);
+    setEditModalVisible(true);
+  };
+
   // Toggle alarm enable/disable
   const handleToggle = async (alarm: Alarm, newValue: boolean) => {
-    await updateAlarmStatus(alarm.name, newValue);
-    setAlarms((prev) =>
-      prev.map((a) =>
-        a.name === alarm.name ? { ...a, enabled: newValue } : a
-      )
-    );
+    if (!alarm.id) {
+      console.error("Alarm ID is missing");
+      return;
+    }
+
+    const success = await updateAlarmStatus(alarm.id, newValue);
+    if (success) {
+      setAlarms((prev) =>
+        prev.map((a) =>
+          a.id === alarm.id ? { ...a, enabled: newValue } : a
+        )
+      );
+    }
   };
 
   // Delete an alarm
@@ -89,33 +145,65 @@ export default function Automations() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            await removeAlarm(alarm.id!);
-            setAlarms((prev) => prev.filter((a) => a.name !== alarm.name));
+            if (!alarm.id) {
+              console.error("Alarm ID is missing");
+              return;
+            }
+            
+            const success = await removeAlarm(alarm.id);
+            if (success) {
+              setAlarms((prev) => prev.filter((a) => a.id !== alarm.id));
+            }
           },
         },
       ]
     );
   };
 
-  // Save new alarm from modal inputs
+  // Save new alarm from add modal
   const handleSave = async () => {
     const repeatValue = repeatMode === "daily" ? "daily" : selectedDays.join("");
-    const newAlarm: Alarm = {
-      name: newAlarmName || `Alarm ${alarms.length + 1}`,
-      action: newAlarmAction,
+    const newAlarm: Omit<Alarm, 'id'> = {
+      name: formName || `Alarm ${alarms.length + 1}`,
+      action: formAction,
       repeat: repeatValue,
-      time: newAlarmTime,
+      time: formTime,
       enabled: true,
     };
-    await createAlarm(newAlarm);
-    fetchAlarms();
-    // Reset modal state
-    setNewAlarmName("");
-    setNewAlarmAction("psu_on");
-    setNewAlarmTime("07:00");
-    setRepeatMode("daily");
-    setSelectedDays([]);
+    
+    const newId = await createAlarm(newAlarm);
+    if (newId) {
+      fetchAlarms(); // Refresh the list
+    }
+    
+    resetForm();
     setModalVisible(false);
+  };
+
+  // Save edited alarm
+  const handleEditSave = async () => {
+    if (!editingAlarm?.id) {
+      console.error("Editing alarm ID is missing");
+      return;
+    }
+
+    const repeatValue = repeatMode === "daily" ? "daily" : selectedDays.join("");
+    const updates: Partial<Omit<Alarm, 'id'>> = {
+      name: formName,
+      action: formAction,
+      repeat: repeatValue,
+      time: formTime,
+      // Keep the current enabled state - don't change it during edit
+    };
+    
+    const success = await updateAlarm(editingAlarm.id, updates);
+    if (success) {
+      fetchAlarms(); // Refresh the list
+    }
+    
+    resetForm();
+    setEditingAlarm(null);
+    setEditModalVisible(false);
   };
 
   // Handle time picker change
@@ -126,7 +214,7 @@ export default function Automations() {
     if (selectedDate) {
       const hours = selectedDate.getHours().toString().padStart(2, "0");
       const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
-      setNewAlarmTime(`${hours}:${minutes}`);
+      setFormTime(`${hours}:${minutes}`);
     }
   };
 
@@ -165,6 +253,125 @@ export default function Automations() {
     return selectedDayLabels.join(", ");
   };
 
+  // Modal form component (shared between add and edit)
+  const renderModalForm = (isEdit: boolean) => (
+    <ScrollView>
+      <Text className="text-xl mb-4">{isEdit ? "Edit Alarm" : "Add New Alarm"}</Text>
+      
+      <Text>Name:</Text>
+      <TextInput
+        value={formName}
+        onChangeText={setFormName}
+        placeholder="Enter alarm name"
+        style={styles.input}
+        placeholderTextColor={Colors[colorScheme ?? "light"].disabled}
+      />
+      
+      <Text>Action:</Text>
+      <Picker
+        selectedValue={formAction}
+        onValueChange={(itemValue) => setFormAction(itemValue)}
+        style={styles.picker}
+      >
+        {actionsList.map((action) => (
+          <Picker.Item
+            key={action}
+            label={action}
+            value={action}
+          />
+        ))}
+      </Picker>
+      
+      <Text>Time: {formTime}</Text>
+      <TouchableOpacity
+        onPress={() => setShowTimePicker(true)}
+        style={styles.timeButton}
+      >
+        <Text style={styles.buttonText}>Select Time</Text>
+      </TouchableOpacity>
+      {showTimePicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="time"
+          display="default"
+          onChange={onTimeChange}
+        />
+      )}
+      
+      <Text>Repeat:</Text>
+      <View style={styles.repeatContainer}>
+        <TouchableOpacity
+          onPress={() => setRepeatMode("daily")}
+          style={[
+            styles.repeatButton,
+            {
+              backgroundColor:
+                repeatMode === "daily"
+                  ? Colors[colorScheme ?? "light"].tint
+                  : "#ccc",
+            },
+          ]}
+        >
+          <Text style={styles.buttonText}>Daily</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setRepeatMode("custom")}
+          style={[
+            styles.repeatButton,
+            {
+              backgroundColor:
+                repeatMode === "custom"
+                  ? Colors[colorScheme ?? "light"].tint
+                  : "#ccc",
+            },
+          ]}
+        >
+          <Text style={styles.buttonText}>Custom</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {repeatMode === "custom" && (
+        <View style={styles.daysContainer}>
+          {daysOfWeek.map((day) => (
+            <TouchableOpacity
+              key={day.code}
+              onPress={() => toggleDay(day.code)}
+              style={[
+                styles.dayButton,
+                {
+                  backgroundColor: selectedDays.includes(day.code)
+                    ? Colors[colorScheme ?? "light"].tint
+                    : "#ccc",
+                },
+              ]}
+            >
+              <Text style={styles.dayButtonText}>{day.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      
+      <View style={styles.modalActions}>
+        <Button 
+          title="Cancel" 
+          onPress={() => {
+            if (isEdit) {
+              setEditModalVisible(false);
+              setEditingAlarm(null);
+            } else {
+              setModalVisible(false);
+            }
+            resetForm();
+          }} 
+        />
+        <Button 
+          title={isEdit ? "Update" : "Save"} 
+          onPress={isEdit ? handleEditSave : handleSave} 
+        />
+      </View>
+    </ScrollView>
+  );
+
   const styles = StyleSheet.create({
     alarmRow: {
       flexDirection: "row",
@@ -193,6 +400,7 @@ export default function Automations() {
     input: {
       borderWidth: 1,
       borderColor: "#ccc",
+      color: "#fff",
       borderRadius: 5,
       padding: 8,
       marginBottom: 10,
@@ -283,12 +491,12 @@ export default function Automations() {
       <Text className="text-xl">Automations</Text>
       <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
         {alarms.map((alarm) => (
-          <View key={alarm.name} style={styles.alarmRow}>
+          <View key={alarm.id || alarm.name} style={styles.alarmRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.nameText}>{alarm.name}</Text>
             </View>
             <View style={{ width: 50, alignItems: "center" }}>
-              <Text style={styles.timeText}>{alarm.time} </Text>
+              <Text style={styles.timeText}>{alarm.time}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -308,6 +516,12 @@ export default function Automations() {
                 style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
               />
               <TouchableOpacity
+                onPress={() => openEditModal(alarm)}
+                style={{ marginLeft: 2 }}
+              >
+                <Ionicons name="pencil" size={18} color="#007AFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={() => handleDelete(alarm)}
                 style={{ marginLeft: 2 }}
               >
@@ -318,116 +532,43 @@ export default function Automations() {
         ))}
       </ScrollView>
 
-      {/* Updated Modal for Adding a New Alarm */}
+      {/* Add Modal */}
       <Modal
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => {
+          setModalVisible(false);
+          resetForm();
+        }}
         visible={modalVisible}
         animationType="fade"
         transparent
       >
         <GestureHandlerRootView>
           <View style={styles.contentContainer}>
-            <ScrollView>
-              <Text className="text-xl mb-4">Add New Alarm</Text>
-              <Text>Name:</Text>
-              <TextInput
-                value={newAlarmName}
-                onChangeText={setNewAlarmName}
-                placeholder="Enter alarm name"
-                style={styles.input}
-                placeholderTextColor={Colors[colorScheme ?? "light"].disabled}
-              />
-              <Text>Action:</Text>
-              <Picker
-                selectedValue={newAlarmAction}
-                onValueChange={(itemValue) => setNewAlarmAction(itemValue)}
-                style={styles.picker}
-              >
-                {actionsList.map((action) => (
-                  <Picker.Item
-                    key={action}
-                    label={action}
-                    value={action}
-                  />
-                ))}
-              </Picker>
-              <Text>Time: {newAlarmTime}</Text>
-              <TouchableOpacity
-                onPress={() => setShowTimePicker(true)}
-                style={styles.timeButton}
-              >
-                <Text style={styles.buttonText}>Select Time</Text>
-              </TouchableOpacity>
-              {showTimePicker && (
-                <DateTimePicker
-                  value={new Date()}
-                  mode="time"
-                  display="default"
-                  onChange={onTimeChange}
-                />
-              )}
-              <Text>Repeat:</Text>
-              <View style={styles.repeatContainer}>
-                <TouchableOpacity
-                  onPress={() => setRepeatMode("daily")}
-                  style={[
-                    styles.repeatButton,
-                    {
-                      backgroundColor:
-                        repeatMode === "daily"
-                          ? Colors[colorScheme ?? "light"].tint
-                          : "#ccc",
-                    },
-                  ]}
-                >
-                  <Text style={styles.buttonText}>Daily </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setRepeatMode("custom")}
-                  style={[
-                    styles.repeatButton,
-                    {
-                      backgroundColor:
-                        repeatMode === "custom"
-                          ? Colors[colorScheme ?? "light"].tint
-                          : "#ccc",
-                    },
-                  ]}
-                >
-                  <Text style={styles.buttonText}>Custom</Text>
-                </TouchableOpacity>
-              </View>
-              {repeatMode === "custom" && (
-                <View style={styles.daysContainer}>
-                  {daysOfWeek.map((day) => (
-                    <TouchableOpacity
-                      key={day.code}
-                      onPress={() => toggleDay(day.code)}
-                      style={[
-                        styles.dayButton,
-                        {
-                          backgroundColor: selectedDays.includes(day.code)
-                            ? Colors[colorScheme ?? "light"].tint
-                            : "#ccc",
-                        },
-                      ]}
-                    >
-                      <Text style={styles.dayButtonText}>{day.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-              <View style={styles.modalActions}>
-                <Button title="Cancel" onPress={() => setModalVisible(false)} />
-                <Button title="Save" onPress={handleSave} />
-              </View>
-            </ScrollView>
+            {renderModalForm(false)}
+          </View>
+        </GestureHandlerRootView>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        onRequestClose={() => {
+          setEditModalVisible(false);
+          setEditingAlarm(null);
+          resetForm();
+        }}
+        visible={editModalVisible}
+        animationType="fade"
+        transparent
+      >
+        <GestureHandlerRootView>
+          <View style={styles.contentContainer}>
+            {renderModalForm(true)}
           </View>
         </GestureHandlerRootView>
       </Modal>
 
       <TouchableOpacity
-        onPress={() => setModalVisible(true)}
+        onPress={openAddModal}
         style={styles.fab}
       >
         <Ionicons name="add" size={28} color="#fff" />
