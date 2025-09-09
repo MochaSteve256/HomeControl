@@ -9,7 +9,6 @@ import {
   Button,
   Platform,
   StyleSheet,
-  Pressable,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
@@ -136,28 +135,37 @@ export default function Automations() {
 
   // Delete an alarm
   const handleDelete = (alarm: Alarm) => {
-    Alert.alert(
-      "Delete Alarm",
-      `Are you sure you want to delete the alarm "${alarm.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            if (!alarm.id) {
-              console.error("Alarm ID is missing");
-              return;
-            }
-            
-            const success = await removeAlarm(alarm.id);
-            if (success) {
-              setAlarms((prev) => prev.filter((a) => a.id !== alarm.id));
-            }
+    if (Platform.OS === "web") {
+      const confirmed = confirm(`Are you sure you want to delete the alarm "${alarm.name}"?`);
+      if (confirmed) {
+        performDelete(alarm);
+      }
+    } else {
+      Alert.alert(
+        "Delete Alarm",
+        `Are you sure you want to delete the alarm "${alarm.name}"?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => performDelete(alarm),
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
+  };
+  
+  const performDelete = async (alarm: Alarm) => {
+    if (!alarm.id) {
+      console.error("Alarm ID is missing");
+      return;
+    }
+  
+    const success = await removeAlarm(alarm.id);
+    if (success) {
+      setAlarms((prev) => prev.filter((a) => a.id !== alarm.id));
+    }
   };
 
   // Save new alarm from add modal
@@ -282,13 +290,25 @@ export default function Automations() {
         ))}
       </Picker>
       
-      <Text>Time: {formTime}</Text>
-      <TouchableOpacity
-        onPress={() => setShowTimePicker(true)}
-        style={styles.timeButton}
-      >
-        <Text style={styles.buttonText}>Select Time</Text>
-      </TouchableOpacity>
+      {Platform.OS === "web" ? (
+        // Web-specific input for time
+        <input
+          type="time"
+          value={formTime}
+          onChange={(e) => setFormTime(e.target.value)}
+        />
+      ) : (
+        <View>
+          <Text>Time: {formTime}</Text>
+          <TouchableOpacity
+            onPress={() => setShowTimePicker(true)}
+            style={styles.timeButton}
+          >
+            <Text style={styles.buttonText}>Select Time</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
       {showTimePicker && (
         <DateTimePicker
           value={new Date()}
