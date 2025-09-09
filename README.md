@@ -8,6 +8,8 @@ npx expo
 ```
 
 ## Compiling and bundling
+
+### android
 ```bash
 # remove old files
 rm build- # ...xxx.aab
@@ -21,3 +23,10 @@ npx eas build -p android --local
 java -jar bundletool-all-1.18.0.jar build-apks --bundle=Home/build- --output=Home/bundle.apks --ks=Home/android/my-release-key.jks --ks-key-alias=my-key-alias --mode=universal # append number and .aab to bundle path
 ```
 
+## build web
+
+```bash
+npx expo export --platform web
+sudo rm -rf /var/www/expo-app/*
+sudo cp -r dist/* /var/www/expo-app/
+```
